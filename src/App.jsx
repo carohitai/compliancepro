@@ -17,6 +17,10 @@ import ReportTypeSelector from "./components/portal/ReportTypeSelector";
 import ComplianceReport from "./components/compliance/ComplianceReport";
 import EnhancedRequirementForm from "./components/requirement/EnhancedRequirementForm";
 
+// What Changes For Me
+import WhatChangesQuickForm from "./components/whatchanges/WhatChangesQuickForm";
+import WhatChangesForMe from "./components/compliance/WhatChangesForMe";
+
 // Dashboard
 import Dashboard from "./components/dashboard/Dashboard";
 
@@ -83,6 +87,34 @@ function PortalStepIndicator({ step, steps, accentColor = "#1a3a6b" }) {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── What Changes For Me ──────────────────────────────────────────────────────
+function WhatChangesPortal({ onHome }) {
+  const [clientInfo, setClientInfo] = useState(null);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50">
+      <AppHeader onHome={onHome} light />
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {!clientInfo ? (
+          <WhatChangesQuickForm onSubmit={setClientInfo} />
+        ) : (
+          <>
+            <WhatChangesForMe clientInfo={clientInfo} />
+            <div className="mt-6 text-center no-print">
+              <button
+                onClick={() => setClientInfo(null)}
+                className="text-sm text-gray-500 hover:text-[#1a3a6b] underline"
+              >
+                ← Change details
+              </button>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
@@ -206,6 +238,7 @@ export default function App() {
 
       {mode === "home" && <HomeScreen onSelectMode={selectMode} />}
       {mode === "portal" && <ClientPortal onHome={() => selectMode("home")} consent={consent} />}
+      {mode === "whatchanges" && <WhatChangesPortal onHome={() => selectMode("home")} />}
       {mode === "professional" && <ProfessionalTool onHome={() => selectMode("home")} consent={consent} />}
     </>
   );
