@@ -85,12 +85,16 @@ const CORS_PROXY = "https://corsproxy.io/?";
  * Dispatches the Nextel send_template call.
  * Tries CORS proxy first (most reliable), then direct, then no-cors last resort.
  */
+// K&A's WhatsApp Business number registered with Nextel
+const KA_SENDER_PHONE = "919049444995";
+
 async function dispatchNextel(phone, clientInfo, docUrl) {
   const payload = {
     type: "buttonTemplate",
     templateId: "attached_document",
     templateLanguage: "en",
-    sender_phone: `91${phone}`,
+    sender_phone: KA_SENDER_PHONE,  // K&A's Nextel-registered WA Business number
+    phone: `91${phone}`,            // recipient's number
     templateArgs: [
       docUrl,
       clientInfo?.name || "Taxpayer",
