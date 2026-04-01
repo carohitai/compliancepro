@@ -6,6 +6,8 @@ import {
   getBusinessHighlights,
 } from "../../data/newTaxAct";
 import { useState } from "react";
+import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
+import { generateWhatChangesPdf } from "../../lib/generateWhatChangesPdf";
 
 // ── WhatsApp message generator ─────────────────────────────────────────────
 function buildWhatsAppMessage(clientInfo, highlights) {
@@ -155,12 +157,139 @@ const impactColor = {
   Low:    "bg-green-100 text-green-700 border border-green-200",
 };
 
+// ── PDF Download button ────────────────────────────────────────────────────
+function DownloadPdfButton({ clientInfo }) {
+  const [pdfStatus, setPdfStatus] = useState("idle"); // idle | generating | done
+
+  async function handleDownload() {
+    setPdfStatus("generating");
+    try {
+      await generateWhatChangesPdf(clientInfo?.name);
+      setPdfStatus("done");
+    } catch (e) {
+      console.error("PDF error:", e);
+      setPdfStatus("idle");
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={pdfStatus === "generating"}
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
+        ${pdfStatus === "done"
+          ? "bg-[#1a3a6b] text-white cursor-default"
+          : pdfStatus === "generating"
+          ? "bg-gray-300 text-gray-500 cursor-wait"
+          : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
+    >
+      {pdfStatus === "generating" ? (
+        <>⏳ Generating PDF…</>
+      ) : pdfStatus === "done" ? (
+        <>✓ PDF Downloaded</>
+      ) : (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Download PDF
+        </>
+      )}
+    </button>
+  );
+}
+
+// ── Post-download success notification modal ───────────────────────────────
+function PdfSuccessModal({ clientInfo, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#1a3a6b] to-[#2a5298] p-6 text-white">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-[#8ab45a] rounded-full flex items-center justify-center text-xl">✓</div>
+            <div>
+              <p className="font-bold text-lg">Report Generated Successfully!</p>
+              <p className="text-blue-200 text-xs">Your PDF has been downloaded</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* What the report covers */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-xs font-bold text-[#1a3a6b] uppercase tracking-wide mb-2">About This Report</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Your personalised <strong>New Income Tax Act 2025 — What Changes For Me?</strong> report has been prepared
+              for <strong>{clientInfo?.name}</strong> ({clientInfo?.nature?.label}). It covers all key changes effective
+              from Tax Year 2026-27 — including renamed terminology, new digital procedures, revised tax rates, and
+              obligations that remain unchanged — helping you prepare well in advance.
+            </p>
+          </div>
+
+          {/* Expert guidance CTA */}
+          <div className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-xl p-4">
+            <p className="text-xs font-bold text-[#1a3a6b] uppercase tracking-wide mb-3">For Expert Guidance</p>
+            <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+              For personalised advisory, tax planning, and implementation support specific to your business, connect with our team at Kolte &amp; Associates LLP.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-400 font-semibold mb-1">📧 Email</p>
+                <a href="mailto:ca.rohit@Kolte.biz" className="block text-xs font-semibold text-[#1a3a6b] hover:underline">ca.rohit@Kolte.biz</a>
+                <a href="mailto:ca.pawan@kolte.biz" className="block text-xs font-semibold text-[#1a3a6b] hover:underline">ca.pawan@kolte.biz</a>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-semibold mb-1">📱 Call / WhatsApp</p>
+                <a href="tel:+919764488999" className="block text-xs font-semibold text-[#1a3a6b] hover:underline">+91 9764488999</a>
+                <a href="tel:+919049222233" className="block text-xs font-semibold text-[#1a3a6b] hover:underline">+91 9049222233</a>
+              </div>
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-xs font-bold text-amber-800 mb-1">⚠ Disclaimer</p>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              This is a system-generated compliance dashboard report for knowledge and information purposes only.
+              All facts should be cross-checked with the relevant statutory provisions and your consultant before any action.
+              Responsibility for use of this information rests solely with the user.
+              Kolte &amp; Associates LLP shall not be liable for any consequence arising from reliance on this report.
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 bg-[#1a3a6b] text-white font-bold rounded-xl text-sm hover:bg-[#0f2548] transition-all"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WhatChangesForMe({ clientInfo }) {
   const [activeTab, setActiveTab] = useState("nomenclature");
+  const [showPdfSuccess, setShowPdfSuccess] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const natureValue = clientInfo?.nature?.value || "default";
   const highlights = getBusinessHighlights(natureValue);
   const phone = clientInfo?.whatsapp;
+
+  async function handleDownloadPdf() {
+    setPdfGenerating(true);
+    try {
+      await generateWhatChangesPdf(clientInfo?.name);
+      setShowPdfSuccess(true);
+    } catch (e) {
+      console.error("PDF error:", e);
+    } finally {
+      setPdfGenerating(false);
+    }
+  }
 
   // Pick relevant operational changes
   const operationalAll = OPERATIONAL_CHANGES.all;
@@ -173,6 +302,19 @@ export default function WhatChangesForMe({ clientInfo }) {
 
   return (
     <div>
+      {/* Success modal */}
+      {showPdfSuccess && (
+        <PdfSuccessModal clientInfo={clientInfo} onClose={() => setShowPdfSuccess(false)} />
+      )}
+
+      {/* Hidden PDF template — captured by html2canvas */}
+      <div style={{
+        position: "fixed", top: 0, left: "-9999px",
+        opacity: 0, pointerEvents: "none", zIndex: -1,
+      }}>
+        <WhatChangesPdfTemplate clientInfo={clientInfo} />
+      </div>
+
       {/* K&A Branded Header */}
       <div className="bg-gradient-to-r from-[#1a3a6b] to-[#2a5298] rounded-2xl p-6 mb-6 text-white">
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -238,7 +380,28 @@ export default function WhatChangesForMe({ clientInfo }) {
             </button>
           ))}
         </div>
-        <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfGenerating}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
+              ${pdfGenerating
+                ? "bg-gray-200 text-gray-400 cursor-wait"
+                : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
+          >
+            {pdfGenerating ? (
+              <>⏳ Generating…</>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF
+              </>
+            )}
+          </button>
+          <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} />
+        </div>
       </div>
 
       {/* ── NOMENCLATURE ──────────────────────────────────────────────────────── */}
@@ -372,14 +535,22 @@ export default function WhatChangesForMe({ clientInfo }) {
         {/* WhatsApp CTA */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-gray-200 no-print">
           <div>
-            <p className="text-sm font-semibold text-gray-700">Share this report on WhatsApp</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {clientInfo?.whatsapp
-                ? `Will be sent to +91 ${clientInfo.whatsapp}`
-                : "Opens WhatsApp with the full report pre-filled"}
-            </p>
+            <p className="text-sm font-semibold text-gray-700">Export &amp; Share</p>
+            <p className="text-xs text-gray-500 mt-0.5">Download a branded PDF or send directly on WhatsApp</p>
           </div>
-          <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={pdfGenerating}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
+                ${pdfGenerating ? "bg-gray-200 text-gray-400 cursor-wait" : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
+            >
+              {pdfGenerating ? <>⏳ Generating…</> : (
+                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Download PDF</>
+              )}
+            </button>
+            <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} />
+          </div>
         </div>
         <p className="text-xs font-semibold text-gray-600 mb-1">Kolte &amp; Associates LLP, Chartered Accountants</p>
         <p className="text-xs text-gray-500">
