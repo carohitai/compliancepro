@@ -4,11 +4,31 @@ import { NATURE_OF_BUSINESS } from "../../data/bacCodes";
 export default function WhatChangesQuickForm({ onSubmit }) {
   const [name, setName] = useState("");
   const [nature, setNature] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+
+  function validatePhone(val) {
+    const digits = val.replace(/\D/g, "");
+    if (digits.length > 0 && digits.length !== 10) {
+      setPhoneError("Enter a valid 10-digit Indian mobile number");
+    } else {
+      setPhoneError("");
+    }
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
+    const digits = whatsapp.replace(/\D/g, "");
+    if (digits.length > 0 && digits.length !== 10) {
+      setPhoneError("Enter a valid 10-digit Indian mobile number");
+      return;
+    }
     const selectedNature = NATURE_OF_BUSINESS.find((n) => n.value === nature) || null;
-    onSubmit({ name: name.trim() || "Taxpayer", nature: selectedNature });
+    onSubmit({
+      name: name.trim() || "Taxpayer",
+      nature: selectedNature,
+      whatsapp: digits || null,
+    });
   }
 
   return (
@@ -57,6 +77,34 @@ export default function WhatChangesQuickForm({ onSubmit }) {
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1.5">This helps us highlight changes most relevant to you.</p>
+        </div>
+
+        {/* WhatsApp Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            WhatsApp Number <span className="text-gray-400 font-normal">(optional — to receive report on WhatsApp)</span>
+          </label>
+          <div className="flex gap-2">
+            <div className="flex items-center px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-500 font-medium select-none">
+              🇮🇳 +91
+            </div>
+            <input
+              type="tel"
+              value={whatsapp}
+              onChange={(e) => {
+                setWhatsapp(e.target.value);
+                validatePhone(e.target.value);
+              }}
+              placeholder="10-digit mobile number"
+              maxLength={10}
+              className={`flex-1 px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500
+                ${phoneError ? "border-red-400 bg-red-50" : "border-gray-300"}`}
+            />
+          </div>
+          {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+          {!phoneError && whatsapp && (
+            <p className="text-xs text-green-600 mt-1">✓ Report will open in WhatsApp after generation</p>
+          )}
         </div>
 
         <button
