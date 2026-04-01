@@ -175,7 +175,7 @@ export default function Dashboard({ onHome }) {
                         ["Registrations",       "Long text"],
                         ["Selected Assignments","Long text"],
                         ["Uploaded Files",      "Long text"],
-                        ["Consent Given",       "Checkbox"],
+                        ["Consent Given",       "Single line text"],
                         ["Consent At",          "Single line text"],
                         ["Submitted At",        "Single line text"],
                       ].map(([name, type], i) => (

@@ -17,20 +17,27 @@ const headers = () => ({
 
 // ─── Save any client submission ───────────────────────────────────────────────
 export async function saveToAirtable(fields) {
-  if (!isAirtableEnabled) return { id: null, error: null }; // silent no-op
+  if (!isAirtableEnabled) {
+    console.warn("[Airtable] Not configured — VITE_AIRTABLE_TOKEN or VITE_AIRTABLE_BASE_ID missing.");
+    return { id: null, error: null };
+  }
   try {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: headers(),
-      body: JSON.stringify({ fields }),
+      // typecast: true — Airtable coerces types (e.g. string → checkbox bool)
+      body: JSON.stringify({ fields, typecast: true }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      return { id: null, error: err?.error?.message || "Airtable error" };
+      const err = await res.json().catch(() => ({}));
+      const msg = err?.error?.message || `HTTP ${res.status}`;
+      console.error("[Airtable] Save failed:", msg, err);
+      return { id: null, error: msg };
     }
     const data = await res.json();
     return { id: data.id, error: null };
   } catch (e) {
+    console.error("[Airtable] Network error:", e.message);
     return { id: null, error: e.message };
   }
 }
