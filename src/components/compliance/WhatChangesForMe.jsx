@@ -3,10 +3,14 @@ import {
   OPERATIONAL_CHANGES,
   RATE_CHANGES,
   WHAT_STAYS_SAME,
+  CONSTITUTION_OPTIONS,
+  CONSTITUTION_TO_OP_CATEGORIES,
+  OP_CATEGORY_LABELS,
   getBusinessHighlights,
   getTdsSectionsByIndustry,
 } from "../../data/newTaxAct";
 import { useState } from "react";
+import SearchableSelect from "../SearchableSelect";
 import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
 import { generateWhatChangesPdf } from "../../lib/generateWhatChangesPdf";
 
@@ -296,15 +300,58 @@ function PdfSuccessModal({ clientInfo, onClose }) {
   );
 }
 
+// ── Constitution filter bar (shown inside each tab) ───────────────────────────
+function ConstitutionFilter({ constitution, onChange }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 p-3 bg-[#1a3a6b]/5 border border-[#1a3a6b]/15 rounded-xl">
+      <span className="text-xs font-bold text-[#1a3a6b] uppercase tracking-wide whitespace-nowrap flex-shrink-0">
+        Filter by Constitution:
+      </span>
+      <SearchableSelect
+        options={CONSTITUTION_OPTIONS}
+        value={constitution}
+        onChange={onChange}
+        placeholder="— All entity types —"
+        className="flex-1 min-w-0"
+      />
+      {constitution && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-xs text-gray-400 hover:text-gray-600 whitespace-nowrap flex-shrink-0 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          ✕ Clear
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function WhatChangesForMe({ clientInfo }) {
   const [activeTab, setActiveTab] = useState("nomenclature");
   const [showPdfSuccess, setShowPdfSuccess] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  // Constitution filter — initialised from the form, changeable in-report
+  const [constitution, setConstitution] = useState(
+    clientInfo?.constitution?.value || ""
+  );
 
   const natureValue = clientInfo?.nature?.value || "default";
   const highlights  = getBusinessHighlights(natureValue);
   const tdsSections = getTdsSectionsByIndustry(natureValue);
   const phone = clientInfo?.whatsapp;
+
+  // Derive which OPERATIONAL_CHANGES categories to show for the chosen constitution
+  const opCategories = constitution
+    ? (CONSTITUTION_TO_OP_CATEGORIES[constitution] || Object.keys(OPERATIONAL_CHANGES))
+    : Object.keys(OPERATIONAL_CHANGES);
+
+  // Filter RATE_CHANGES by chosen constitution
+  const visibleRates = RATE_CHANGES.filter((r) => {
+    if (!constitution) return true;
+    if (!r.constitutions) return true;
+    return r.constitutions.includes("all") || r.constitutions.includes(constitution);
+  });
 
   async function handleDownloadPdf() {
     setPdfGenerating(true);
@@ -317,15 +364,6 @@ export default function WhatChangesForMe({ clientInfo }) {
       setPdfGenerating(false);
     }
   }
-
-  // Pick relevant operational changes
-  const operationalAll = OPERATIONAL_CHANGES.all;
-  const operationalBusiness = [
-    ...(OPERATIONAL_CHANGES.business || []),
-    ...(OPERATIONAL_CHANGES.professional || []),
-    ...(OPERATIONAL_CHANGES.salaried || []),
-    ...(OPERATIONAL_CHANGES.capital_gains || []),
-  ].filter(Boolean);
 
   return (
     <div>
@@ -343,9 +381,9 @@ export default function WhatChangesForMe({ clientInfo }) {
       </div>
 
       {/* K&A Branded Header */}
-      <div className="bg-gradient-to-r from-[#1a3a6b] to-[#2a5298] rounded-2xl p-6 mb-6 text-white">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
+      <div className="bg-gradient-to-r from-[#1a3a6b] to-[#2a5298] rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 text-white">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* Logo */}
             <div className="flex-shrink-0">
               <div className="flex gap-1 mb-1">
@@ -365,11 +403,14 @@ export default function WhatChangesForMe({ clientInfo }) {
               </p>
             </div>
           </div>
-          <div className="text-right text-sm text-blue-200">
+          <div className="text-left sm:text-right text-sm text-blue-200">
             <p className="font-bold text-white text-base">{clientInfo?.name}</p>
             <p>{clientInfo?.nature?.label}</p>
+            {clientInfo?.constitution && (
+              <p className="text-xs mt-0.5 text-amber-300">🏛 {clientInfo.constitution.label}</p>
+            )}
             {phone && <p className="text-xs mt-0.5 text-green-300">📱 +91 {phone}</p>}
-            <p className="text-xs mt-1">Income Tax Bill, 2025 (Introduced 13 Feb 2025)</p>
+            <p className="text-xs mt-1 opacity-70">Income Tax Bill, 2025 (13 Feb 2025)</p>
           </div>
         </div>
 
@@ -391,23 +432,27 @@ export default function WhatChangesForMe({ clientInfo }) {
         )}
       </div>
 
-      {/* Inner tab navigation + WhatsApp button */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5 no-print">
-        <div className="flex flex-wrap gap-2">
-          {INNER_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all border
-                ${activeTab === tab.id
-                  ? "bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#1a3a6b] hover:text-[#1a3a6b]"}`}
-            >
-              <span>{tab.icon}</span> {tab.label}
-            </button>
-          ))}
+      {/* Inner tab navigation + action buttons */}
+      <div className="mb-4 no-print">
+        {/* Tabs — scroll horizontally on mobile */}
+        <div className="overflow-x-auto pb-1">
+          <div className="flex gap-2 min-w-max">
+            {INNER_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all border whitespace-nowrap
+                  ${activeTab === tab.id
+                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-sm"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-[#1a3a6b] hover:text-[#1a3a6b]"}`}
+              >
+                <span>{tab.icon}</span> {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Action buttons row */}
+        <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
           <button
             onClick={handleDownloadPdf}
             disabled={pdfGenerating}
@@ -434,25 +479,34 @@ export default function WhatChangesForMe({ clientInfo }) {
       {/* ── NOMENCLATURE ──────────────────────────────────────────────────────── */}
       {activeTab === "nomenclature" && (
         <div>
+          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-800">
             <strong>What this means:</strong> The new Income Tax Act replaces legal jargon with plain language.
             All forms, notices and correspondence from the Income Tax Department will use new terminology from TY 2026-27 onwards.
+            {constitution && (
+              <span className="ml-1 font-semibold text-[#1a3a6b]">
+                — Showing all terms (rename applies to every entity type).
+              </span>
+            )}
           </div>
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#1a3a6b] text-white">
-                  <th className="px-4 py-3 text-left font-semibold w-1/3">Old Term (IT Act 1961)</th>
-                  <th className="px-4 py-3 text-left font-semibold w-1/3">New Term (IT Act 2025)</th>
-                  <th className="px-4 py-3 text-left font-semibold">What It Means for You</th>
+                  <th className="px-3 sm:px-4 py-3 text-left font-semibold">Old Term (IT Act 1961)</th>
+                  <th className="px-3 sm:px-4 py-3 text-left font-semibold">New Term (IT Act 2025)</th>
+                  <th className="hidden sm:table-cell px-4 py-3 text-left font-semibold">What It Means for You</th>
                 </tr>
               </thead>
               <tbody>
                 {NOMENCLATURE_CHANGES.map((item, i) => (
                   <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="px-4 py-3 font-semibold text-red-700 line-through decoration-red-300">{item.old}</td>
-                    <td className="px-4 py-3 font-bold text-[#4a7c59]">{item.newTerm}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs leading-relaxed">{item.note}</td>
+                    <td className="px-3 sm:px-4 py-2.5 font-semibold text-red-700 line-through decoration-red-300 text-xs sm:text-sm">{item.old}</td>
+                    <td className="px-3 sm:px-4 py-2.5 font-bold text-[#4a7c59] text-xs sm:text-sm">
+                      {item.newTerm}
+                      <p className="sm:hidden text-xs text-gray-500 font-normal mt-0.5 no-underline">{item.note}</p>
+                    </td>
+                    <td className="hidden sm:table-cell px-4 py-2.5 text-gray-600 text-xs leading-relaxed">{item.note}</td>
                   </tr>
                 ))}
               </tbody>
@@ -464,45 +518,40 @@ export default function WhatChangesForMe({ clientInfo }) {
       {/* ── OPERATIONS ────────────────────────────────────────────────────────── */}
       {activeTab === "operations" && (
         <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-bold text-[#1a3a6b] uppercase tracking-wide mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#1a3a6b] inline-block" /> Applies to All Taxpayers
-            </h3>
-            <div className="space-y-3">
-              {operationalAll.map((item, i) => (
-                <div key={i} className="border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-0.5 ${impactColor[item.impact]}`}>{item.impact}</span>
-                  <div>
-                    <p className="font-bold text-sm text-gray-800 mb-1">{item.title}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
-                  </div>
+          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
+          {opCategories.map((catKey) => {
+            const items = OPERATIONAL_CHANGES[catKey];
+            if (!items || items.length === 0) return null;
+            return (
+              <div key={catKey}>
+                <h3 className="text-sm font-bold uppercase tracking-wide mb-3 flex items-center gap-2"
+                  style={{ color: catKey === "all" ? "#1a3a6b" : "#4a7c59" }}>
+                  <span className="w-2 h-2 rounded-full inline-block"
+                    style={{ background: catKey === "all" ? "#1a3a6b" : "#4a7c59" }} />
+                  {OP_CATEGORY_LABELS[catKey] || catKey}
+                </h3>
+                <div className="space-y-3">
+                  {items.map((item, i) => (
+                    <div key={i} className="border border-gray-200 rounded-xl p-3 sm:p-4 flex items-start gap-3">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-0.5 ${impactColor[item.impact]}`}>{item.impact}</span>
+                      <div>
+                        <p className="font-bold text-sm text-gray-800 mb-1">{item.title}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#4a7c59] uppercase tracking-wide mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#4a7c59] inline-block" /> Business &amp; Professional Specific
-            </h3>
-            <div className="space-y-3">
-              {operationalBusiness.map((item, i) => (
-                <div key={i} className="border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-0.5 ${impactColor[item.impact]}`}>{item.impact}</span>
-                  <div>
-                    <p className="font-bold text-sm text-gray-800 mb-1">{item.title}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {/* ── RATES ─────────────────────────────────────────────────────────────── */}
       {activeTab === "rates" && (
-        <div className="space-y-5">
-          {RATE_CHANGES.map((cat, ci) => (
+        <div className="space-y-4">
+          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
+          {visibleRates.map((cat, ci) => (
             <div key={ci} className={`border rounded-xl overflow-hidden ${cat.changed ? "border-amber-300" : "border-gray-200"}`}>
               <div className={`px-4 py-3 flex items-center justify-between ${cat.changed ? "bg-amber-50" : "bg-gray-50"}`}>
                 <h3 className="font-bold text-sm text-gray-800">{cat.category}</h3>

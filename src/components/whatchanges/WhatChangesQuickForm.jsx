@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { NATURE_OF_BUSINESS } from "../../data/bacCodes";
+import { CONSTITUTION_OPTIONS } from "../../data/newTaxAct";
+import SearchableSelect from "../SearchableSelect";
 
 export default function WhatChangesQuickForm({ onSubmit }) {
   const [name, setName] = useState("");
   const [nature, setNature] = useState("");
+  const [constitution, setConstitution] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
@@ -24,9 +27,11 @@ export default function WhatChangesQuickForm({ onSubmit }) {
       return;
     }
     const selectedNature = NATURE_OF_BUSINESS.find((n) => n.value === nature) || null;
+    const selectedConstitution = CONSTITUTION_OPTIONS.find((c) => c.value === constitution) || null;
     onSubmit({
       name: name.trim() || "Taxpayer",
       nature: selectedNature,
+      constitution: selectedConstitution,
       whatsapp: digits || null,
     });
   }
@@ -77,6 +82,20 @@ export default function WhatChangesQuickForm({ onSubmit }) {
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1.5">This helps us highlight changes most relevant to you.</p>
+        </div>
+
+        {/* Constitution / Entity Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            Constitution / Entity Type <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <SearchableSelect
+            options={CONSTITUTION_OPTIONS}
+            value={constitution}
+            onChange={setConstitution}
+            placeholder="— Select entity type —"
+          />
+          <p className="text-xs text-gray-400 mt-1.5">Used to filter tax rates and compliance rules relevant to your entity.</p>
         </div>
 
         {/* WhatsApp Number */}

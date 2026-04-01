@@ -2,7 +2,7 @@ export default function HomeScreen({ onSelectMode }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2548] via-[#1a3a6b] to-[#1a3a6b] flex flex-col">
       {/* Header */}
-      <header className="px-6 py-5 flex items-center justify-between max-w-5xl mx-auto w-full">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <div className="flex gap-0.5">
             {["K", "&", "A"].map((ch, i) => (
@@ -20,24 +20,24 @@ export default function HomeScreen({ onSelectMode }) {
       </header>
 
       {/* Hero */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 text-center">
-        <div className="inline-block bg-[#8ab45a]/20 border border-[#8ab45a]/40 rounded-full px-4 py-1.5 text-[#8ab45a] text-xs font-semibold uppercase tracking-widest mb-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12 text-center">
+        <div className="inline-block bg-[#8ab45a]/20 border border-[#8ab45a]/40 rounded-full px-4 py-1.5 text-[#8ab45a] text-xs font-semibold uppercase tracking-widest mb-5">
           Compliance & Requirements Platform
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight px-2">
           What would you like to do today?
         </h1>
-        <p className="text-blue-300 text-sm max-w-lg mb-12">
+        <p className="text-blue-300 text-sm max-w-lg mb-8 sm:mb-12 px-2">
           Choose the portal that fits your need — compliance reports, professional checklists, or your personalised New Tax Act guide.
         </p>
 
         {/* Mode cards — 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 w-full max-w-4xl px-0">
 
           {/* Client Portal */}
           <button
             onClick={() => onSelectMode("portal")}
-            className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#8ab45a]/60 rounded-2xl p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02]"
+            className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#8ab45a]/60 rounded-2xl p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02]"
           >
             <div className="w-12 h-12 rounded-xl bg-[#8ab45a]/20 flex items-center justify-center mb-4 group-hover:bg-[#8ab45a]/30 transition-all">
               <span className="text-2xl">🏢</span>
@@ -70,7 +70,7 @@ export default function HomeScreen({ onSelectMode }) {
           {/* What Changes For Me — highlighted card */}
           <button
             onClick={() => onSelectMode("whatchanges")}
-            className="group relative bg-gradient-to-br from-amber-500/15 to-orange-500/10 hover:from-amber-500/25 hover:to-orange-500/20 border border-amber-400/30 hover:border-amber-400/70 rounded-2xl p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02] overflow-hidden"
+            className="group relative bg-gradient-to-br from-amber-500/15 to-orange-500/10 hover:from-amber-500/25 hover:to-orange-500/20 border border-amber-400/30 hover:border-amber-400/70 rounded-2xl p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02] overflow-hidden"
           >
             {/* NEW badge */}
             <div className="absolute top-3 right-3 bg-amber-400 text-[#0f2548] text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -109,7 +109,7 @@ export default function HomeScreen({ onSelectMode }) {
           {/* Professional Tool */}
           <button
             onClick={() => onSelectMode("professional")}
-            className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-400/60 rounded-2xl p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02]"
+            className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-400/60 rounded-2xl p-4 sm:p-6 text-left transition-all hover:shadow-xl hover:scale-[1.02]"
           >
             <div className="w-12 h-12 rounded-xl bg-blue-400/10 flex items-center justify-center mb-4 group-hover:bg-blue-400/20 transition-all">
               <span className="text-2xl">📋</span>

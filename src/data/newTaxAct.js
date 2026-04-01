@@ -4,6 +4,45 @@
 // Effective: Proposed from FY 2026-27 (TY 2026-27)
 // Sources: incometaxindia.gov.in · PRS Legislative Research · ICAI
 
+// ─── Constitution (Entity Type) Options ──────────────────────────────────────
+export const CONSTITUTION_OPTIONS = [
+  { value: "individual",  label: "Individual / Salaried" },
+  { value: "huf",         label: "HUF (Hindu Undivided Family)" },
+  { value: "sole_prop",   label: "Sole Proprietorship" },
+  { value: "partnership", label: "Partnership Firm" },
+  { value: "llp",         label: "LLP (Limited Liability Partnership)" },
+  { value: "pvt_ltd",     label: "Private Limited Company" },
+  { value: "public_ltd",  label: "Public Limited Company" },
+  { value: "opc",         label: "One Person Company (OPC)" },
+  { value: "trust",       label: "Trust / NGO / Section 8" },
+  { value: "aop_boi",     label: "AOP / BOI" },
+  { value: "coop",        label: "Co-operative Society" },
+];
+
+// Maps each constitution to which OPERATIONAL_CHANGES category keys to show
+export const CONSTITUTION_TO_OP_CATEGORIES = {
+  individual:  ["all", "salaried", "capital_gains"],
+  huf:         ["all", "business", "capital_gains"],
+  sole_prop:   ["all", "business", "capital_gains"],
+  partnership: ["all", "business", "capital_gains"],
+  llp:         ["all", "business", "professional", "capital_gains"],
+  pvt_ltd:     ["all", "business", "capital_gains"],
+  public_ltd:  ["all", "business", "capital_gains"],
+  opc:         ["all", "business", "capital_gains"],
+  trust:       ["all", "capital_gains"],
+  aop_boi:     ["all", "business", "capital_gains"],
+  coop:        ["all", "business", "capital_gains"],
+};
+
+// Human-readable category labels for Operations tab
+export const OP_CATEGORY_LABELS = {
+  all:           "Applies to All Taxpayers",
+  business:      "Business & Trade Entities",
+  professional:  "Professionals (Doctors, CAs, Lawyers…)",
+  salaried:      "Salaried / Individual",
+  capital_gains: "Capital Gains",
+};
+
 // ─── Nomenclature Changes ─────────────────────────────────────────────────────
 export const NOMENCLATURE_CHANGES = [
   { old: "Assessment Year (AY)",          newTerm: "Tax Year (TY)",                         note: "The separate AY concept is merged — tax is assessed for the same Tax Year in which income arises." },
@@ -137,6 +176,7 @@ export const OPERATIONAL_CHANGES = {
 export const RATE_CHANGES = [
   {
     category: "Individual – New Tax Regime (Default)",
+    constitutions: ["individual", "huf", "sole_prop", "aop_boi"],
     slabs: [
       { income: "Up to ₹3,00,000",              rate: "Nil" },
       { income: "₹3,00,001 – ₹7,00,000",       rate: "5%" },
@@ -150,6 +190,7 @@ export const RATE_CHANGES = [
   },
   {
     category: "Individual – Old Tax Regime (Optional)",
+    constitutions: ["individual", "huf", "sole_prop", "aop_boi"],
     slabs: [
       { income: "Up to ₹2,50,000",              rate: "Nil" },
       { income: "₹2,50,001 – ₹5,00,000",       rate: "5%" },
@@ -161,6 +202,7 @@ export const RATE_CHANGES = [
   },
   {
     category: "Domestic Companies",
+    constitutions: ["pvt_ltd", "public_ltd", "opc"],
     slabs: [
       { income: "Existing companies",           rate: "22% + surcharge + cess" },
       { income: "New manufacturing companies",  rate: "15% + surcharge + cess" },
@@ -171,6 +213,7 @@ export const RATE_CHANGES = [
   },
   {
     category: "Capital Gains – New Rates (from 23 Jul 2024)",
+    constitutions: ["all"],
     slabs: [
       { income: "LTCG – Listed equity/MF (>₹1.25L)",  rate: "12.5% (was 10%)" },
       { income: "STCG – Listed equity/MF",             rate: "20% (was 15%)" },
@@ -182,6 +225,7 @@ export const RATE_CHANGES = [
   },
   {
     category: "TDS Rates – Key Changes",
+    constitutions: ["all"],
     slabs: [
       { income: "194DA – Life insurance maturity",     rate: "5% on profit (no change)" },
       { income: "194F – MF repurchase (removed)",      rate: "Removed from 1 Oct 2024" },
@@ -189,6 +233,44 @@ export const RATE_CHANGES = [
       { income: "194S – VDA/Crypto",                   rate: "1% (threshold ₹50,000)" },
     ],
     note: "Most TDS sections continue. Section numbers may be renumbered in new Act.",
+    changed: true,
+  },
+  {
+    category: "Partnership Firm / LLP – Tax Rate",
+    constitutions: ["partnership", "llp"],
+    slabs: [
+      { income: "All taxable income",                     rate: "30% flat" },
+      { income: "Surcharge (income >₹1 Cr)",              rate: "+ 12%" },
+      { income: "Health & Education Cess",                rate: "+ 4% on tax + surcharge" },
+      { income: "Partner remuneration (in firm's hands)", rate: "Deductible u/s 40(b) limits" },
+      { income: "Partner's share income (in partner's ITR)", rate: "Individual slab rates" },
+    ],
+    note: "Partners taxed individually on their share of profit. Remuneration/interest to partners deductible in firm subject to 40(b) limits. No basic exemption for firm itself.",
+    changed: false,
+  },
+  {
+    category: "Co-operative Society – Tax Rate",
+    constitutions: ["coop"],
+    slabs: [
+      { income: "Up to ₹10,000",                           rate: "10%" },
+      { income: "₹10,001 – ₹20,000",                      rate: "20%" },
+      { income: "Above ₹20,000",                           rate: "30%" },
+      { income: "New manufacturing co-ops (Sec 115BAE)",   rate: "15% flat" },
+      { income: "Surcharge (>₹1 Cr / >₹10 Cr)",           rate: "7% / 12%" },
+    ],
+    note: "Cess 4% applicable on tax + surcharge. New manufacturing co-operative societies qualify for 15% concessional rate from AY 2024-25 onwards.",
+    changed: false,
+  },
+  {
+    category: "Trust / NGO / AOP / BOI – Tax",
+    constitutions: ["trust", "aop_boi"],
+    slabs: [
+      { income: "Registered Trust (12AB) — income applied to objects",  rate: "Exempt (85% application rule)" },
+      { income: "Registered Trust — undistributed / corpus accumulation", rate: "15% on unspent amount" },
+      { income: "Unregistered Trust / AOP / BOI",                       rate: "30% (maximum marginal rate)" },
+      { income: "AOP — members' shares known",                          rate: "Individual slab rates" },
+    ],
+    note: "12AB registration is mandatory (replaced 12AA). New trusts must register under 12AB. 85% application-of-income rule strictly enforced; violation attracts tax at MMR.",
     changed: true,
   },
 ];
