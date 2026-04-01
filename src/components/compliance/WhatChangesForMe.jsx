@@ -12,7 +12,8 @@ import {
 import { useState } from "react";
 import SearchableSelect from "../SearchableSelect";
 import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
-import { generateWhatChangesPdf } from "../../lib/generateWhatChangesPdf";
+import { generateWhatChangesPdf, buildPdfBlob } from "../../lib/generateWhatChangesPdf";
+import { uploadPdfBlob } from "../../lib/uploadPdf";
 
 // ── WhatsApp message generator ─────────────────────────────────────────────
 function buildWhatsAppMessage(clientInfo, highlights) {
@@ -74,23 +75,28 @@ https://carohitai.github.io/compliancepro/
 _This message is for informational purposes only and does not constitute professional advice. For personalised guidance contact Kolte & Associates LLP._`;
 }
 
-// Nextel WhatsApp API endpoint
 // Nextel WhatsApp Business API — send_template endpoint (API_V2)
 const NEXTEL_SEND_URL = "https://api.nextel.io/API_V2/Whatsapp/send_template/ZlVhbG5hS3J3SElqMnllNUJsUllGZz09";
+const APP_URL        = "https://carohitai.github.io/compliancepro/";
 
-async function sendViaNextel(phone, clientInfo) {
+/**
+ * Dispatches the Nextel send_template call.
+ * docUrl — first templateArg: ideally the real PDF URL (Phase 2),
+ *           falls back to the app URL (Phase 1).
+ */
+async function dispatchNextel(phone, clientInfo, docUrl) {
   const payload = {
     type: "buttonTemplate",
     templateId: "attached_document",
     templateLanguage: "en",
     sender_phone: `91${phone}`,
     templateArgs: [
-      "https://carohitai.github.io/compliancepro/",
+      docUrl,
       clientInfo?.name || "Taxpayer",
       `New Income Tax Act 2025 report for ${clientInfo?.nature?.label || "your business"}. Prepared by Kolte & Associates LLP, Chartered Accountants.`,
     ],
   };
-  // Try normal fetch first; if CORS blocks it, fall back to no-cors (opaque response).
+  // Prefer JSON (readable response); fall back to no-cors if CORS blocks preflight.
   try {
     const res = await fetch(NEXTEL_SEND_URL, {
       method: "POST",
@@ -100,39 +106,70 @@ async function sendViaNextel(phone, clientInfo) {
     if (res.ok) return;
     throw new Error(`HTTP ${res.status}`);
   } catch {
-    // no-cors mode: preflight is skipped, request is sent, response is opaque.
     await fetch(NEXTEL_SEND_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(payload),
     });
-    // no-cors fetch resolves on network completion — treat as success.
   }
 }
 
+/**
+ * Phase 2 — generate PDF blob → upload to temp host → send real PDF URL via Nextel.
+ * Falls back to Phase 1 app URL if PDF generation or upload fails.
+ * Returns the docUrl that was actually sent (useful for status display).
+ */
+async function sendViaNextel(phone, clientInfo, onProgress) {
+  let docUrl = APP_URL; // Phase 1 fallback
+
+  try {
+    onProgress("generating");
+    const { blob, filename } = await buildPdfBlob(clientInfo?.name);
+
+    onProgress("uploading");
+    const uploaded = await uploadPdfBlob(blob, filename);
+    if (uploaded) docUrl = uploaded;
+  } catch {
+    // PDF generation or upload failed — proceed with Phase 1 app URL
+  }
+
+  onProgress("sending");
+  await dispatchNextel(phone, clientInfo, docUrl);
+  return docUrl;
+}
+
+// Status label map for the Phase 2 progress states
+const WA_STATUS_LABEL = {
+  generating: "⏳ Generating PDF…",
+  uploading:  "⏳ Uploading PDF…",
+  sending:    "⏳ Sending…",
+  sent:       "✓ PDF Sent on WhatsApp!",
+  fallback:   "✓ Opened WhatsApp",
+};
+
 function SendWhatsAppButton({ clientInfo, highlights }) {
-  const [status, setStatus] = useState("idle"); // idle | sending | sent | error | fallback
+  // idle | generating | uploading | sending | sent | fallback
+  const [status, setStatus] = useState("idle");
 
   async function handleSend() {
-    const phone = clientInfo?.whatsapp;
+    const phone   = clientInfo?.whatsapp;
     const message = buildWhatsAppMessage(clientInfo, highlights);
 
     if (phone) {
-      setStatus("sending");
       try {
-        await sendViaNextel(phone, clientInfo);
+        await sendViaNextel(phone, clientInfo, setStatus);
         setStatus("sent");
-        setTimeout(() => setStatus("idle"), 5000);
+        setTimeout(() => setStatus("idle"), 6000);
       } catch {
-        // API failed — fall back to wa.me
+        // Full failure — fall back to wa.me deep link
         setStatus("fallback");
         const encoded = encodeURIComponent(message);
         window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank", "noopener,noreferrer");
         setTimeout(() => setStatus("idle"), 5000);
       }
     } else {
-      // No number — open wa.me so user can choose recipient
+      // No number entered — open wa.me so user picks recipient themselves
       const encoded = encodeURIComponent(message);
       window.open(`https://wa.me/?text=${encoded}`, "_blank", "noopener,noreferrer");
       setStatus("sent");
@@ -140,33 +177,29 @@ function SendWhatsAppButton({ clientInfo, highlights }) {
     }
   }
 
-  const sent = status === "sent";
-  const sending = status === "sending";
-  const fallback = status === "fallback";
+  const busy    = ["generating", "uploading", "sending"].includes(status);
+  const done    = ["sent", "fallback"].includes(status);
+  const label   = WA_STATUS_LABEL[status];
 
   return (
     <button
       onClick={handleSend}
-      disabled={sending}
+      disabled={busy}
       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
-        ${sent || fallback
+        ${done
           ? "bg-green-600 text-white cursor-default"
-          : sending
+          : busy
           ? "bg-green-400 text-white cursor-wait"
           : "bg-[#25D366] hover:bg-[#1ebe57] text-white hover:shadow-md"}`}
     >
-      {sending ? (
-        <>⏳ Sending…</>
-      ) : sent ? (
-        <>✓ {clientInfo?.whatsapp ? "Message Sent!" : "Opening WhatsApp…"}</>
-      ) : fallback ? (
-        <>✓ Opened WhatsApp</>
+      {busy || done ? (
+        <>{label || "…"}</>
       ) : (
         <>
           <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
-          {clientInfo?.whatsapp ? `Send to +91 ${clientInfo.whatsapp}` : "Share on WhatsApp"}
+          {clientInfo?.whatsapp ? `Send PDF to +91 ${clientInfo.whatsapp}` : "Share on WhatsApp"}
         </>
       )}
     </button>

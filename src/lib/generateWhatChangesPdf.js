@@ -1,19 +1,23 @@
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-/**
- * Captures each named page div independently — no slicing, no content cuts.
- * Each page div becomes exactly one PDF page, scaled to fit A4 if taller.
- */
-export async function generateWhatChangesPdf(clientName) {
+/** Build the filename from client name + today's date. */
+function buildFilename(clientName) {
+  const safeName = (clientName || "Report")
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .trim()
+    .replace(/\s+/g, "_");
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `KA_NewTaxAct_${safeName}_${dateStr}.pdf`;
+}
+
+/** Shared capture logic — renders all page divs and builds jsPDF instance. */
+async function capturePdf(clientName) {
   const wrapper = document.getElementById("wcm-pdf-template");
   if (!wrapper) throw new Error("PDF template not found");
 
-  // Reveal template off-screen for capture
   wrapper.style.opacity = "1";
   wrapper.style.pointerEvents = "none";
-
-  // Small delay so browser renders the newly visible content
   await new Promise((r) => setTimeout(r, 120));
 
   const PAGE_IDS = [
@@ -25,10 +29,9 @@ export async function generateWhatChangesPdf(clientName) {
     "wcm-page-unchanged",
   ];
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();   // 210 mm
-  const pageH = pdf.internal.pageSize.getHeight();  // 297 mm
-
+  const pdf   = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
   let firstPage = true;
 
   for (const id of PAGE_IDS) {
@@ -46,11 +49,10 @@ export async function generateWhatChangesPdf(clientName) {
     if (!firstPage) pdf.addPage();
     firstPage = false;
 
-    const imgData  = canvas.toDataURL("image/png");
-    const canvasW  = canvas.width;
-    const canvasH  = canvas.height;
+    const imgData = canvas.toDataURL("image/png");
+    const canvasW = canvas.width;
+    const canvasH = canvas.height;
 
-    // Scale image to page width; if it exceeds page height, scale down further
     let imgW = pageW;
     let imgH = (canvasH / canvasW) * pageW;
     if (imgH > pageH) {
@@ -62,13 +64,26 @@ export async function generateWhatChangesPdf(clientName) {
     pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH);
   }
 
-  wrapper.style.opacity  = "0";
+  wrapper.style.opacity      = "0";
   wrapper.style.pointerEvents = "none";
 
-  const safeName = (clientName || "Report")
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .trim()
-    .replace(/\s+/g, "_");
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  pdf.save(`KA_NewTaxAct_${safeName}_${dateStr}.pdf`);
+  return { pdf, filename: buildFilename(clientName) };
+}
+
+/**
+ * Generates and saves PDF to disk (user download).
+ * Captures each named page div independently — no slicing, no content cuts.
+ */
+export async function generateWhatChangesPdf(clientName) {
+  const { pdf, filename } = await capturePdf(clientName);
+  pdf.save(filename);
+}
+
+/**
+ * Generates PDF and returns it as a Blob + filename — does NOT save to disk.
+ * Used by Phase 2 WhatsApp flow to upload the PDF and get a public URL.
+ */
+export async function buildPdfBlob(clientName) {
+  const { pdf, filename } = await capturePdf(clientName);
+  return { blob: pdf.output("blob"), filename };
 }
