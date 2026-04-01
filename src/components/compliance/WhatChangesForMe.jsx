@@ -67,31 +67,69 @@ https://carohitai.github.io/compliancepro/
 _This message is for informational purposes only and does not constitute professional advice. For personalised guidance contact Kolte & Associates LLP._`;
 }
 
-function SendWhatsAppButton({ clientInfo, highlights }) {
-  const [sent, setSent] = useState(false);
+// Nextel WhatsApp API endpoint
+const NEXTEL_URL = "https://api.nextel.io/WEBHOOK_V1/Audience/set/39027dfad5138c9ca0c474d71db915c3";
 
-  function handleSend() {
+async function sendViaNextel(phone, message) {
+  const res = await fetch(NEXTEL_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: `91${phone}`, message }),
+  });
+  if (!res.ok) throw new Error(`Nextel API error: ${res.status}`);
+  return res;
+}
+
+function SendWhatsAppButton({ clientInfo, highlights }) {
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | error | fallback
+
+  async function handleSend() {
     const phone = clientInfo?.whatsapp;
     const message = buildWhatsAppMessage(clientInfo, highlights);
-    const encoded = encodeURIComponent(message);
-    const url = phone
-      ? `https://wa.me/91${phone}?text=${encoded}`
-      : `https://wa.me/?text=${encoded}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
+
+    if (phone) {
+      setStatus("sending");
+      try {
+        await sendViaNextel(phone, message);
+        setStatus("sent");
+        setTimeout(() => setStatus("idle"), 5000);
+      } catch {
+        // API failed — fall back to wa.me
+        setStatus("fallback");
+        const encoded = encodeURIComponent(message);
+        window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank", "noopener,noreferrer");
+        setTimeout(() => setStatus("idle"), 5000);
+      }
+    } else {
+      // No number — open wa.me so user can choose recipient
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, "_blank", "noopener,noreferrer");
+      setStatus("sent");
+      setTimeout(() => setStatus("idle"), 4000);
+    }
   }
+
+  const sent = status === "sent";
+  const sending = status === "sending";
+  const fallback = status === "fallback";
 
   return (
     <button
       onClick={handleSend}
+      disabled={sending}
       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
-        ${sent
+        ${sent || fallback
           ? "bg-green-600 text-white cursor-default"
+          : sending
+          ? "bg-green-400 text-white cursor-wait"
           : "bg-[#25D366] hover:bg-[#1ebe57] text-white hover:shadow-md"}`}
     >
-      {sent ? (
-        <>✓ Opening WhatsApp…</>
+      {sending ? (
+        <>⏳ Sending…</>
+      ) : sent ? (
+        <>✓ {clientInfo?.whatsapp ? "Message Sent!" : "Opening WhatsApp…"}</>
+      ) : fallback ? (
+        <>✓ Opened WhatsApp</>
       ) : (
         <>
           <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
