@@ -252,3 +252,41 @@ export const BUSINESS_SPECIFIC_HIGHLIGHTS = {
 export function getBusinessHighlights(natureValue) {
   return BUSINESS_SPECIFIC_HIGHLIGHTS[natureValue] || BUSINESS_SPECIFIC_HIGHLIGHTS.default;
 }
+
+// ─── TDS Section Renumbering (IT Act 1961 → IT Bill 2025) ────────────────────
+// Source: Income Tax Bill, 2025 (introduced Lok Sabha, 13 Feb 2025)
+// Chapter XIX — Deduction and Collection of Tax at Source (Cl. 379 onwards)
+// Note: Proposed section numbers — subject to final enactment and gazette notification
+export const TDS_SECTION_RENUMBERING = [
+  { old: "192",   oldTitle: "TDS on Salary",                              newCl: "379",  rate: "Slab rate",   threshold: "Any amount",         industries: ["all"] },
+  { old: "193",   oldTitle: "TDS on Interest on Securities",              newCl: "380",  rate: "10%",         threshold: "₹5,000",             industries: ["fintech", "ngo_trust"] },
+  { old: "194",   oldTitle: "TDS on Dividends (Companies)",               newCl: "381",  rate: "10%",         threshold: "₹5,000",             industries: ["all"] },
+  { old: "194A",  oldTitle: "TDS on Interest (Bank/Other)",               newCl: "382",  rate: "10%",         threshold: "₹50,000 (Sr.Cit) / ₹40,000 (others)", industries: ["all", "fintech"] },
+  { old: "194B",  oldTitle: "TDS on Lottery / Game Winnings",             newCl: "383",  rate: "30%",         threshold: "₹10,000",            industries: ["hospitality"] },
+  { old: "194C",  oldTitle: "TDS on Contractor / Sub-contractor",         newCl: "385",  rate: "1% / 2%",     threshold: "₹30,000 single / ₹1,00,000 aggregate", industries: ["manufacturer", "contractor", "infrastructure", "real_estate_developer", "trader_wholesale", "trader_retail", "trader_both", "service_provider", "it_software", "healthcare", "hospitality", "education"] },
+  { old: "194D",  oldTitle: "TDS on Insurance Commission",                newCl: "386",  rate: "5%",          threshold: "₹15,000",            industries: ["insurance", "commission_agent", "fintech"] },
+  { old: "194H",  oldTitle: "TDS on Commission / Brokerage",              newCl: "390",  rate: "5%",          threshold: "₹15,000",            industries: ["commission_agent", "trader_wholesale", "ecommerce", "fintech", "insurance"] },
+  { old: "194I",  oldTitle: "TDS on Rent",                                newCl: "391",  rate: "2% / 10%",    threshold: "₹2,40,000 p.a.",     industries: ["all"] },
+  { old: "194IA", oldTitle: "TDS on Purchase of Immovable Property",      newCl: "392",  rate: "1%",          threshold: "₹50,00,000",         industries: ["real_estate_developer", "infrastructure", "manufacturer", "trader_wholesale"] },
+  { old: "194IB", oldTitle: "TDS on Rent (Individuals / HUF)",            newCl: "393",  rate: "5%",          threshold: "₹50,000/month",      industries: ["all"] },
+  { old: "194IC", oldTitle: "TDS on Joint Development Agreement",         newCl: "394",  rate: "10%",         threshold: "Any amount",         industries: ["real_estate_developer", "infrastructure"] },
+  { old: "194J",  oldTitle: "TDS on Professional / Technical Fees",       newCl: "395",  rate: "2% / 10%",    threshold: "₹30,000",            industries: ["all"] },
+  { old: "194M",  oldTitle: "TDS on Payments by Individuals to Contractor/Prof.", newCl: "398", rate: "5%", threshold: "₹50,00,000 p.a.",   industries: ["all"] },
+  { old: "194N",  oldTitle: "TDS on Cash Withdrawal",                     newCl: "399",  rate: "2% / 5%",     threshold: "₹1 Cr (₹20L if no ITR)", industries: ["all"] },
+  { old: "194O",  oldTitle: "TDS on E-commerce Operators",                newCl: "400",  rate: "1%",          threshold: "₹5,00,000",          industries: ["ecommerce", "it_software", "trader_retail", "trader_both"] },
+  { old: "194Q",  oldTitle: "TDS on Purchase of Goods",                   newCl: "402",  rate: "0.1%",        threshold: "₹50,00,000 p.a.",    industries: ["manufacturer", "trader_wholesale", "trader_both", "contractor", "infrastructure"] },
+  { old: "194R",  oldTitle: "TDS on Benefits / Perquisites to Business",  newCl: "403",  rate: "10%",         threshold: "₹20,000 p.a.",       industries: ["manufacturer", "trader_wholesale", "service_provider", "it_software", "fintech"] },
+  { old: "194S",  oldTitle: "TDS on Virtual Digital Assets (Crypto)",     newCl: "404",  rate: "1%",          threshold: "₹50,000 / ₹10,000",  industries: ["fintech", "it_software", "startup"] },
+  { old: "195",   oldTitle: "TDS on Non-Resident Payments",               newCl: "406",  rate: "Rates in force", threshold: "Any amount",      industries: ["it_software", "service_provider", "manufacturer", "fintech", "exporter", "import_export"] },
+  { old: "196D",  oldTitle: "TDS on Income of FII from Securities",       newCl: "412",  rate: "20%",         threshold: "Any amount",         industries: ["fintech"] },
+];
+
+// Returns TDS sections relevant to the given industry
+export function getTdsSectionsByIndustry(natureValue) {
+  if (!natureValue || natureValue === "default") {
+    return TDS_SECTION_RENUMBERING.filter((s) => s.industries.includes("all"));
+  }
+  return TDS_SECTION_RENUMBERING.filter(
+    (s) => s.industries.includes("all") || s.industries.includes(natureValue)
+  );
+}
