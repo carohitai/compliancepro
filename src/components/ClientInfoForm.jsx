@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { CONSTITUTIONS, REGISTRATION_TYPES } from "../data/requirements";
+import { REGISTRATION_TYPES } from "../data/requirements";
+import { CONSTITUTION_OPTIONS } from "../data/newTaxAct";
+import SearchableSelect from "./SearchableSelect";
 
 export default function ClientInfoForm({ onNext }) {
   const [form, setForm] = useState({
@@ -80,17 +82,14 @@ export default function ClientInfoForm({ onNext }) {
             />
           </div>
           <div>
-            <label className={labelCls}>Constitution <span className="text-red-500">*</span></label>
-            <select
-              className={`${inputCls} bg-white ${errors.constitution ? "border-red-400 ring-1 ring-red-300" : ""}`}
+            <label className={labelCls}>Constitution / Entity Type <span className="text-red-500">*</span></label>
+            <SearchableSelect
+              options={CONSTITUTION_OPTIONS}
               value={form.constitution}
-              onChange={(e) => handleField("constitution", e.target.value)}
-            >
-              <option value="">— Select —</option>
-              {CONSTITUTIONS.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+              onChange={(v) => handleField("constitution", v)}
+              placeholder="— Search entity type —"
+              className={errors.constitution ? "ring-1 ring-red-400 rounded-xl" : ""}
+            />
             {errors.constitution && <p className="text-red-500 text-xs mt-1">{errors.constitution}</p>}
           </div>
           <div>

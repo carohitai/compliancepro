@@ -1,5 +1,6 @@
 import Select from "react-select";
 import { BAC_SECTORS, NATURE_OF_BUSINESS } from "../../data/bacCodes";
+import { CONSTITUTION_OPTIONS } from "../../data/newTaxAct";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -33,7 +34,7 @@ const selectStyles = {
 
 export default function ClientPortalForm({ onNext }) {
   const [form, setForm] = React.useState({
-    name: "", email: "", mobile: "", sector: null, nature: null,
+    name: "", email: "", mobile: "", constitution: null, sector: null, nature: null,
   });
   const [errors, setErrors] = React.useState({});
 
@@ -79,6 +80,21 @@ export default function ClientPortalForm({ onNext }) {
             <label className={lbl}>Full Name <span className="text-red-500">*</span></label>
             <input className={`${inp} ${errors.name ? "border-red-400" : ""}`} placeholder="Your full name" value={form.name} onChange={(e) => set("name", e.target.value)} />
             {errors.name && <p className={err}>{errors.name}</p>}
+          </div>
+
+          {/* Constitution */}
+          <div className="md:col-span-2">
+            <label className={lbl}>Constitution / Entity Type</label>
+            <Select
+              options={CONSTITUTION_OPTIONS}
+              value={form.constitution}
+              onChange={(v) => set("constitution", v)}
+              placeholder="Search or select entity type (Individual, Pvt Ltd, LLP…)"
+              styles={selectStyles}
+              isSearchable
+              isClearable
+            />
+            <p className="text-gray-400 text-xs mt-1">Helps tailor your compliance report to your entity type.</p>
           </div>
 
           {/* Email */}
