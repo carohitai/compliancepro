@@ -10,7 +10,7 @@ export async function savePortalSubmission({ clientInfo, reportType, purpose, lo
     "Report Type":          reportType || "",
     "Name":                 clientInfo?.name || "",
     "Email":                clientInfo?.email || "",
-    "Mobile":               clientInfo?.mobile || "",
+    "Mobile":               clientInfo?.whatsapp || "",
     "BAC Sector":           clientInfo?.sector?.label
                               ? `${clientInfo.sector.label} (${clientInfo.sector.value || ""})`
                               : "",
@@ -42,7 +42,7 @@ export async function saveProfessionalSubmission({ clientInfo, selectedAssignmen
     "Report Type":          "Requirement Report",
     "Name":                 clientInfo?.name || "",
     "Email":                clientInfo?.email || "",
-    "Mobile":               clientInfo?.phone || "",
+    "Mobile":               clientInfo?.whatsapp || "",
     "Constitution":         clientInfo?.constitution || "",
     "Financial Year":       clientInfo?.financialYear || "",
     "Registrations":        regList,

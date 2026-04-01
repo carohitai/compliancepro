@@ -10,7 +10,7 @@ export default function ClientInfoForm({ onNext }) {
     constitution: "",
     address: "",
     email: "",
-    phone: "",
+    whatsapp: "",
     financialYear: "2025-26",
     registrations: {},
   });
@@ -124,14 +124,18 @@ export default function ClientInfoForm({ onNext }) {
             />
           </div>
           <div>
-            <label className={labelCls}>Phone</label>
-            <input
-              type="tel"
-              className={inputCls}
-              placeholder="+91 XXXXX XXXXX"
-              value={form.phone}
-              onChange={(e) => handleField("phone", e.target.value)}
-            />
+            <label className={labelCls}>WhatsApp Number</label>
+            <div className="flex gap-2">
+              <span className="flex items-center px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-500 font-medium select-none">🇮🇳 +91</span>
+              <input
+                type="tel"
+                maxLength={10}
+                className={`${inputCls} flex-1`}
+                placeholder="10-digit WhatsApp number"
+                value={form.whatsapp}
+                onChange={(e) => handleField("whatsapp", e.target.value.replace(/\D/g, ""))}
+              />
+            </div>
           </div>
         </div>
       </div>

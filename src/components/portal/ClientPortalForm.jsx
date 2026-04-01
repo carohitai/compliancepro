@@ -34,7 +34,7 @@ const selectStyles = {
 
 export default function ClientPortalForm({ onNext }) {
   const [form, setForm] = React.useState({
-    name: "", email: "", mobile: "", constitution: null, sector: null, nature: null,
+    name: "", email: "", whatsapp: "", constitution: null, sector: null, nature: null,
   });
   const [errors, setErrors] = React.useState({});
 
@@ -48,8 +48,8 @@ export default function ClientPortalForm({ onNext }) {
     if (!form.name.trim())  e.name   = "Name is required";
     if (!form.email.trim()) e.email  = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
-    if (!form.mobile.trim())  e.mobile  = "Mobile number is required";
-    else if (!/^\d{10}$/.test(form.mobile.replace(/\s/g, ""))) e.mobile = "Enter a valid 10-digit mobile number";
+    if (!form.whatsapp.trim())  e.whatsapp  = "WhatsApp number is required";
+    else if (!/^\d{10}$/.test(form.whatsapp.replace(/\s/g, ""))) e.whatsapp = "Enter a valid 10-digit WhatsApp number";
     if (!form.sector)  e.sector  = "Please select a business sector";
     if (!form.nature)  e.nature  = "Please select nature of business";
     return e;
@@ -104,11 +104,14 @@ export default function ClientPortalForm({ onNext }) {
             {errors.email && <p className={err}>{errors.email}</p>}
           </div>
 
-          {/* Mobile */}
+          {/* WhatsApp */}
           <div>
-            <label className={lbl}>Mobile No. <span className="text-red-500">*</span></label>
-            <input type="tel" className={`${inp} ${errors.mobile ? "border-red-400" : ""}`} placeholder="10-digit mobile number" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} />
-            {errors.mobile && <p className={err}>{errors.mobile}</p>}
+            <label className={lbl}>WhatsApp Number <span className="text-red-500">*</span></label>
+            <div className="flex gap-2">
+              <span className="flex items-center px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-500 font-medium select-none">🇮🇳 +91</span>
+              <input type="tel" maxLength={10} className={`${inp} flex-1 ${errors.whatsapp ? "border-red-400" : ""}`} placeholder="10-digit WhatsApp number" value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value.replace(/\D/g, ""))} />
+            </div>
+            {errors.whatsapp && <p className={err}>{errors.whatsapp}</p>}
           </div>
 
           {/* BAC Sector */}
