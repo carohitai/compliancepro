@@ -2,6 +2,7 @@
 // Sources: incometaxindia.gov.in · gst.gov.in · taxmann.in
 
 export const ASSESSMENT_YEARS = [
+  { value: "2026-27", label: "AY 2026-27 (FY 2025-26)" },
   { value: "2025-26", label: "AY 2025-26 (FY 2024-25)" },
   { value: "2024-25", label: "AY 2024-25 (FY 2023-24)" },
   { value: "2023-24", label: "AY 2023-24 (FY 2022-23)" },
@@ -68,6 +69,31 @@ export const TURNOVER_LIMITS = [
 
 // ─── Key Due Dates ────────────────────────────────────────────────────────────
 export const DUE_DATES = {
+  "2026-27": [
+    { date: "15 Jun 2026", event: "Advance Tax – Q1 instalment (15% of tax)", category: "Income Tax" },
+    { date: "31 Jul 2026", event: "ITR Filing – Individuals, HUF, Firms (non-audit)", category: "Income Tax" },
+    { date: "15 Sep 2026", event: "Advance Tax – Q2 instalment (45% cumulative)", category: "Income Tax" },
+    { date: "30 Sep 2026", event: "Tax Audit Report (Form 3CA/3CB/3CD) submission", category: "Income Tax" },
+    { date: "31 Oct 2026", event: "ITR Filing – Companies & audit cases", category: "Income Tax" },
+    { date: "15 Dec 2026", event: "Advance Tax – Q3 instalment (75% cumulative)", category: "Income Tax" },
+    { date: "31 Dec 2026", event: "ITR – Belated / Revised return deadline", category: "Income Tax" },
+    { date: "15 Mar 2027", event: "Advance Tax – Q4 instalment (100%)", category: "Income Tax" },
+    { date: "31 Mar 2027", event: "Updated return (ITR-U) – 2 yrs from AY", category: "Income Tax" },
+    { date: "10th monthly", event: "GSTR-1 – Monthly filers (outward supplies)", category: "GST" },
+    { date: "13th monthly", event: "GSTR-1 – QRMP quarterly filers (IFF)", category: "GST" },
+    { date: "20th monthly", event: "GSTR-3B – Monthly filers (summary + payment)", category: "GST" },
+    { date: "22nd/24th quarterly", event: "GSTR-3B – QRMP scheme quarterly filers", category: "GST" },
+    { date: "31 Dec 2026", event: "GSTR-9 & GSTR-9C – Annual return FY 2025-26", category: "GST" },
+    { date: "7th monthly",  event: "TDS / TCS deposit (non-March month)", category: "TDS" },
+    { date: "30 Apr 2026",  event: "TDS deposit – March 2026 deductions", category: "TDS" },
+    { date: "31 Jul 2026",  event: "TDS Return – Q1 (24Q / 26Q / 27Q)", category: "TDS" },
+    { date: "31 Oct 2026",  event: "TDS Return – Q2", category: "TDS" },
+    { date: "31 Jan 2027",  event: "TDS Return – Q3", category: "TDS" },
+    { date: "31 May 2026",  event: "TDS Return – Q4 (FY 2025-26)", category: "TDS" },
+    { date: "15 Jun 2026",  event: "Form 16 issue to employees (Q4 TDS cert)", category: "TDS" },
+    { date: "15 Aug / Nov / Feb / Jun", event: "Form 16A – Non-salary TDS certificate", category: "TDS" },
+    { date: "31 Oct 2026",  event: "ROC – Annual Filing (AOC-4 / MGT-7) for companies", category: "ROC" },
+  ],
   "2025-26": [
     { date: "15 Jun 2025", event: "Advance Tax – Q1 instalment (15% of tax)", category: "Income Tax" },
     { date: "31 Jul 2025", event: "ITR Filing – Individuals, HUF, Firms (non-audit)", category: "Income Tax" },

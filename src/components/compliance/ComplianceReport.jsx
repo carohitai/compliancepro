@@ -63,7 +63,7 @@ export default function ComplianceReport({ clientInfo, onBack, onReset }) {
 
   const sectorKey = getSectorKey(clientInfo.sector);
   const sectorData = SECTOR_COMPLIANCE[sectorKey] || SECTOR_COMPLIANCE.services;
-  const dueDates = DUE_DATES["2025-26"];
+  const dueDates = DUE_DATES[ay?.value] || DUE_DATES["2025-26"];
 
   const tdsChartData = TDS_SECTIONS.slice(0, 12).map((s) => ({
     name: `§${s.section}`,

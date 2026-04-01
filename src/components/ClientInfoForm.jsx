@@ -9,13 +9,13 @@ export default function ClientInfoForm({ onNext }) {
     address: "",
     email: "",
     phone: "",
-    financialYear: "2024-25",
+    financialYear: "2025-26",
     registrations: {},
   });
   const [errors, setErrors] = useState({});
 
   const financialYears = [
-    "2024-25", "2023-24", "2022-23", "2021-22", "2020-21",
+    "2025-26", "2024-25", "2023-24", "2022-23", "2021-22", "2020-21",
   ];
 
   function handleField(key, value) {
