@@ -14,6 +14,7 @@ import SearchableSelect from "../SearchableSelect";
 import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
 import { generateWhatChangesPdf, buildPdfBlob } from "../../lib/generateWhatChangesPdf";
 import { uploadPdfBlob } from "../../lib/uploadPdf";
+import { generateShareableReportUrl } from "../../lib/generateShareableUrl";
 
 // ── WhatsApp message generator ─────────────────────────────────────────────
 function buildWhatsAppMessage(clientInfo, highlights) {
@@ -77,12 +78,12 @@ _This message is for informational purposes only and does not constitute profess
 
 // Nextel WhatsApp Business API — send_template endpoint (API_V2)
 const NEXTEL_SEND_URL = "https://api.nextel.io/API_V2/Whatsapp/send_template/ZlVhbG5hS3J3SElqMnllNUJsUllGZz09";
-const APP_URL        = "https://carohitai.github.io/compliancepro/";
+// corsproxy.io forwards the request server-side — bypasses browser CORS restriction
+const CORS_PROXY = "https://corsproxy.io/?";
 
 /**
  * Dispatches the Nextel send_template call.
- * docUrl — first templateArg: ideally the real PDF URL (Phase 2),
- *           falls back to the app URL (Phase 1).
+ * Tries CORS proxy first (most reliable), then direct, then no-cors last resort.
  */
 async function dispatchNextel(phone, clientInfo, docUrl) {
   const payload = {
@@ -96,32 +97,50 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
       `New Income Tax Act 2025 report for ${clientInfo?.nature?.label || "your business"}. Prepared by Kolte & Associates LLP, Chartered Accountants.`,
     ],
   };
-  // Prefer JSON (readable response); fall back to no-cors if CORS blocks preflight.
+
+  const body = JSON.stringify(payload);
+  const jsonHeaders = { "Content-Type": "application/json" };
+
+  // ── Try 1: via corsproxy.io (bypasses CORS, sends proper application/json) ──
+  try {
+    const res = await fetch(CORS_PROXY + encodeURIComponent(NEXTEL_SEND_URL), {
+      method: "POST",
+      headers: jsonHeaders,
+      body,
+    });
+    if (res.ok) return;
+    throw new Error(`proxy HTTP ${res.status}`);
+  } catch { /* try direct next */ }
+
+  // ── Try 2: direct call (works if Nextel adds CORS headers in future) ─────
   try {
     const res = await fetch(NEXTEL_SEND_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      headers: jsonHeaders,
+      body,
     });
     if (res.ok) return;
-    throw new Error(`HTTP ${res.status}`);
-  } catch {
-    await fetch(NEXTEL_SEND_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(payload),
-    });
-  }
+  } catch { /* try no-cors last */ }
+
+  // ── Try 3: no-cors last resort (request fires, response is opaque) ────────
+  await fetch(NEXTEL_SEND_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body,
+  });
 }
 
 /**
- * Phase 2 — generate PDF blob → upload to temp host → send real PDF URL via Nextel.
- * Falls back to Phase 1 app URL if PDF generation or upload fails.
- * Returns the docUrl that was actually sent (useful for status display).
+ * Full Phase 2 flow:
+ *   1. Generate PDF blob in memory
+ *   2. Upload via CORS proxy → get real PDF URL
+ *   3. Falls back to personalised shareable report URL if upload fails
+ *   4. Sends via Nextel (also via CORS proxy)
  */
 async function sendViaNextel(phone, clientInfo, onProgress) {
-  let docUrl = APP_URL; // Phase 1 fallback
+  // Personalised shareable URL — much better than homepage as fallback
+  let docUrl = generateShareableReportUrl(clientInfo);
 
   try {
     onProgress("generating");
@@ -131,7 +150,7 @@ async function sendViaNextel(phone, clientInfo, onProgress) {
     const uploaded = await uploadPdfBlob(blob, filename);
     if (uploaded) docUrl = uploaded;
   } catch {
-    // PDF generation or upload failed — proceed with Phase 1 app URL
+    // PDF gen or upload failed — shareable URL is the fallback
   }
 
   onProgress("sending");

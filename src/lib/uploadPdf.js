@@ -1,58 +1,59 @@
 /**
  * Phase 2 WhatsApp — PDF upload to temporary public hosting.
  *
- * Tries services in order:
- *   1. tmpfiles.org  — multi-download, auto-deletes in 1 hour, CORS-friendly
- *   2. file.io       — single-use download link, 14-day expiry
+ * Both services are called through corsproxy.io to bypass browser CORS
+ * restrictions (tmpfiles.org and file.io don't send CORS headers for
+ * cross-origin browser requests).
  *
- * Returns a direct-download URL string on success, or null if both fail.
- * Caller must fall back to Phase 1 (app URL) when null is returned.
+ * Order:
+ *   1. tmpfiles.org  — multi-download, auto-deletes in 1 hour
+ *   2. file.io       — single-use download, 14-day expiry
+ *
+ * Returns a direct-download URL on success, or null on failure.
  */
+
+const CORS_PROXY = "https://corsproxy.io/?";
+
 export async function uploadPdfBlob(blob, filename) {
-  // ── Attempt 1: tmpfiles.org ───────────────────────────────────────────────
+  // ── Attempt 1: tmpfiles.org via CORS proxy ────────────────────────────────
   try {
     const form = new FormData();
     form.append("file", blob, filename);
 
-    const res = await fetch("https://tmpfiles.org/api/v1/upload", {
-      method: "POST",
-      body: form,
-    });
+    const res = await fetch(
+      CORS_PROXY + encodeURIComponent("https://tmpfiles.org/api/v1/upload"),
+      { method: "POST", body: form }
+    );
 
     if (res.ok) {
       const data = await res.json();
-      // Response: { status: "success", data: { url: "https://tmpfiles.org/123/file.pdf" } }
       const pageUrl = data?.data?.url;
       if (pageUrl) {
-        // Convert web-page URL to direct-download URL
-        // https://tmpfiles.org/123/file.pdf → https://tmpfiles.org/dl/123/file.pdf
+        // Convert web-page URL → direct-download URL
         return pageUrl.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/");
       }
     }
   } catch {
-    // Network error or CORS block — try next service
+    // CORS proxy or tmpfiles failed — try next
   }
 
-  // ── Attempt 2: file.io ────────────────────────────────────────────────────
+  // ── Attempt 2: file.io via CORS proxy ─────────────────────────────────────
   try {
     const form = new FormData();
     form.append("file", blob, filename);
 
-    const res = await fetch("https://file.io/?expires=14d", {
-      method: "POST",
-      body: form,
-    });
+    const res = await fetch(
+      CORS_PROXY + encodeURIComponent("https://file.io/?expires=1d"),
+      { method: "POST", body: form }
+    );
 
     if (res.ok) {
       const data = await res.json();
-      // Response: { success: true, link: "https://file.io/xxxxxxxx" }
-      if (data?.success && data?.link) {
-        return data.link;
-      }
+      if (data?.success && data?.link) return data.link;
     }
   } catch {
-    // Both services failed
+    // Both failed
   }
 
-  return null; // Caller should fall back to Phase 1 app URL
+  return null;
 }

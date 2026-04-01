@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./index.css";
 
 // Home + shared
@@ -26,6 +26,9 @@ import Dashboard from "./components/dashboard/Dashboard";
 
 // DB save helpers
 import { savePortalSubmission, saveProfessionalSubmission } from "./lib/saveSubmission";
+
+// Shareable report URL
+import { parseShareableReportUrl } from "./lib/generateShareableUrl";
 
 // ─── Shared header ────────────────────────────────────────────────────────────
 function AppHeader({ onHome, light = false }) {
@@ -92,8 +95,8 @@ function PortalStepIndicator({ step, steps, accentColor = "#1a3a6b" }) {
 }
 
 // ─── What Changes For Me ──────────────────────────────────────────────────────
-function WhatChangesPortal({ onHome }) {
-  const [clientInfo, setClientInfo] = useState(null);
+function WhatChangesPortal({ onHome, initialClientInfo = null }) {
+  const [clientInfo, setClientInfo] = useState(initialClientInfo);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50">
@@ -216,10 +219,14 @@ function ClientPortal({ onHome, consent }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [mode, setMode] = useState(() => {
-    // Support hash-based dashboard route: #/dashboard
-    return window.location.hash === "#/dashboard" ? "dashboard" : "home";
+    if (window.location.hash === "#/dashboard") return "dashboard";
+    // Shared report link: ?wcm=1&... → go straight to whatchanges
+    if (new URLSearchParams(window.location.search).get("wcm") === "1") return "whatchanges";
+    return "home";
   });
   const [consent, setConsent] = useState(null);
+  // Pre-populated clientInfo from a shared report URL
+  const [sharedClientInfo] = useState(() => parseShareableReportUrl());
 
   function handleConsent(c) { setConsent(c); }
 
@@ -238,7 +245,7 @@ export default function App() {
 
       {mode === "home" && <HomeScreen onSelectMode={selectMode} />}
       {mode === "portal" && <ClientPortal onHome={() => selectMode("home")} consent={consent} />}
-      {mode === "whatchanges" && <WhatChangesPortal onHome={() => selectMode("home")} />}
+      {mode === "whatchanges" && <WhatChangesPortal onHome={() => selectMode("home")} initialClientInfo={sharedClientInfo} />}
       {mode === "professional" && <ProfessionalTool onHome={() => selectMode("home")} consent={consent} />}
     </>
   );
