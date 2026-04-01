@@ -10,6 +10,7 @@ import {
 } from "../../data/complianceData";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import WhatChangesForMe from "./WhatChangesForMe";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -29,10 +30,11 @@ const selectStyles = {
 };
 
 const TABS = [
-  { id: "compliance", label: "Compliance", icon: "✅" },
-  { id: "due_dates",  label: "Due Dates",  icon: "📅" },
-  { id: "limits",     label: "Limits",     icon: "📊" },
-  { id: "matters",    label: "What Matters", icon: "🔔" },
+  { id: "compliance", label: "Compliance",         icon: "✅" },
+  { id: "due_dates",  label: "Due Dates",           icon: "📅" },
+  { id: "limits",     label: "Limits",              icon: "📊" },
+  { id: "matters",    label: "What Matters",        icon: "🔔" },
+  { id: "new_act",    label: "What Changes For Me", icon: "🆕" },
 ];
 
 const COLORS = ["#1a3a6b", "#4a7c59", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
@@ -429,6 +431,11 @@ export default function ComplianceReport({ clientInfo, onBack, onReset }) {
                 <p>Data compiled from: incometaxindia.gov.in · gst.gov.in · taxmann.in — FY 2024-25 / {ay?.label}. For the latest updates, always refer to official circulars and notifications.</p>
               </div>
             </div>
+          )}
+
+          {/* ── NEW ACT TAB ──────────────────────────────────────────────────── */}
+          {activeTab === "new_act" && (
+            <WhatChangesForMe clientInfo={clientInfo} />
           )}
         </div>
 
