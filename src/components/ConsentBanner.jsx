@@ -26,23 +26,23 @@ export default function ConsentBanner({ onAccept }) {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-      {/* Modal — flex column, capped height so footer button always shows */}
-      <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col"
-        style={{ maxHeight: "90vh", height: "auto" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      {/* Modal — always centred, capped height so footer button always shows */}
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col"
+        style={{ maxHeight: "88vh" }}>
 
         {/* ── Fixed header ────────────────────────────────── */}
-        <div className="bg-[#1a3a6b] px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 flex-shrink-0 rounded-t-2xl sm:rounded-t-2xl">
-          <div className="flex gap-0.5 flex-shrink-0">
+        <div className="bg-[#1a3a6b] px-5 py-4 flex items-center gap-4 flex-shrink-0 rounded-t-2xl">
+          <div className="flex gap-1 flex-shrink-0">
             {["K", "&", "A"].map((ch, i) => (
-              <div key={i} className="w-6 h-7 bg-[#8ab45a] flex items-center justify-center rounded-sm">
-                <span className="text-[#1a3a6b] font-serif font-bold text-xs">{ch}</span>
+              <div key={i} className="w-9 h-10 bg-[#8ab45a] flex items-center justify-center rounded-sm shadow-sm">
+                <span className="text-[#1a3a6b] font-serif font-bold text-base">{ch}</span>
               </div>
             ))}
           </div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">Kolte &amp; Associates LLP</p>
-            <p className="text-blue-300 text-xs">Chartered Accountants · Data Privacy Notice</p>
+            <p className="text-white font-bold text-base leading-tight">Kolte &amp; Associates LLP</p>
+            <p className="text-[#8ab45a] text-xs font-medium">Chartered Accountants · Privacy Notice</p>
           </div>
         </div>
 
