@@ -1,0 +1,4 @@
+Portal Type,Report Type,Name,Email,Mobile,BAC Sector,Sector Group,Nature of Business,Constitution,Financial Year,Purpose,Loan Type,Registrations,Selected Assignments,Uploaded Files,Consent Given,Consent At,Submitted At
+Client Portal,Compliance Report,Sample Client,client@example.com,9876543210,"Retail Trade – General (NIC 4711)","Trade & Commerce",Trader – Retail,,,,,,,None,Yes,2026-04-01T10:00:00.000Z,2026-04-01T10:00:00.000Z
+Client Portal,Requirement Report,ABC Enterprises,abc@example.com,9123456789,"Software Development (NIC 6201)","IT & Technology",IT / Software / Technology,,,Accounting,,,,sample.pdf,Yes,2026-04-01T11:00:00.000Z,2026-04-01T11:00:00.000Z
+Professional Tool,Requirement Report,XYZ Pvt Ltd,,9000000000,,,Manufacturer,Private Limited Company,FY 2025-26,,,"GST: 27XXXXX | PAN: AAAAX","ITR, TDS, GST Audit",,Yes,2026-04-01T12:00:00.000Z,2026-04-01T12:00:00.000Z
