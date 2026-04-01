@@ -71,22 +71,40 @@ _This message is for informational purposes only and does not constitute profess
 }
 
 // Nextel WhatsApp API endpoint
-// Uses no-cors mode: browser CORS policy blocks reading the response from
-// third-party APIs, but the request IS sent and received by the server.
-// This is the standard browser approach for webhook-style integrations.
-const NEXTEL_URL = "https://api.nextel.io/WEBHOOK_V1/Audience/set/39027dfad5138c9ca0c474d71db915c3";
+// Nextel WhatsApp Business API — send_template endpoint (API_V2)
+const NEXTEL_SEND_URL = "https://api.nextel.io/API_V2/Whatsapp/send_template/ZlVhbG5hS3J3SElqMnllNUJsUllGZz09";
 
-async function sendViaNextel(phone, message) {
-  // no-cors sends the request without a preflight check.
-  // Response is "opaque" — we can't read it, but the webhook receives the payload.
-  await fetch(NEXTEL_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ phone: `91${phone}`, message }),
-  });
-  // With no-cors, fetch resolves (doesn't throw) if the network request completes.
-  // Treat completion as success — the server receives the payload.
+async function sendViaNextel(phone, clientInfo) {
+  const payload = {
+    type: "buttonTemplate",
+    templateId: "attached_document",
+    templateLanguage: "en",
+    sender_phone: `91${phone}`,
+    templateArgs: [
+      "https://carohitai.github.io/compliancepro/",
+      clientInfo?.name || "Taxpayer",
+      `New Income Tax Act 2025 report for ${clientInfo?.nature?.label || "your business"}. Prepared by Kolte & Associates LLP, Chartered Accountants.`,
+    ],
+  };
+  // Try normal fetch first; if CORS blocks it, fall back to no-cors (opaque response).
+  try {
+    const res = await fetch(NEXTEL_SEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return;
+    throw new Error(`HTTP ${res.status}`);
+  } catch {
+    // no-cors mode: preflight is skipped, request is sent, response is opaque.
+    await fetch(NEXTEL_SEND_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload),
+    });
+    // no-cors fetch resolves on network completion — treat as success.
+  }
 }
 
 function SendWhatsAppButton({ clientInfo, highlights }) {
@@ -99,7 +117,7 @@ function SendWhatsAppButton({ clientInfo, highlights }) {
     if (phone) {
       setStatus("sending");
       try {
-        await sendViaNextel(phone, message);
+        await sendViaNextel(phone, clientInfo);
         setStatus("sent");
         setTimeout(() => setStatus("idle"), 5000);
       } catch {
