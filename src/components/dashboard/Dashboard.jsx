@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import {
-  fetchSubmissions, fetchSubmissionDetail, getFileUrl, isSupabaseEnabled,
-} from "../../lib/supabase";
+import { fetchFromAirtable, isAirtableEnabled } from "../../lib/airtable";
 
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || "ka@admin2025";
+const AIRTABLE_BASE_ID   = import.meta.env.VITE_AIRTABLE_BASE_ID   || "";
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 function DashboardLogin({ onLogin }) {
@@ -32,7 +31,7 @@ function DashboardLogin({ onLogin }) {
             ))}
           </div>
         </div>
-        <h2 className="text-center font-bold text-xl text-[#1a3a6b] mb-1">K&A Dashboard</h2>
+        <h2 className="text-center font-bold text-xl text-[#1a3a6b] mb-1">K&amp;A Dashboard</h2>
         <p className="text-center text-sm text-gray-500 mb-6">Kolte &amp; Associates LLP — Staff Only</p>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -50,233 +49,7 @@ function DashboardLogin({ onLogin }) {
             Sign In
           </button>
         </form>
-        {!isSupabaseEnabled && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-            ⚠ Supabase not configured — database features unavailable. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env
-          </div>
-        )}
       </div>
-    </div>
-  );
-}
-
-// ─── Client Detail Modal ──────────────────────────────────────────────────────
-function ClientDetailModal({ submissionId, onClose }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("info");
-  const [fileUrls, setFileUrls] = useState({});
-
-  useEffect(() => {
-    fetchSubmissionDetail(submissionId).then(({ submission, files }) => {
-      setData({ submission, files });
-      setLoading(false);
-    });
-  }, [submissionId]);
-
-  async function openFile(path, fileId) {
-    if (fileUrls[fileId]) { window.open(fileUrls[fileId], "_blank"); return; }
-    const url = await getFileUrl(path);
-    if (url) { setFileUrls((p) => ({ ...p, [fileId]: url })); window.open(url, "_blank"); }
-  }
-
-  if (loading) return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-      <div className="bg-white rounded-2xl p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-2 border-[#1a3a6b] border-t-transparent rounded-full mx-auto mb-3" />
-        <p className="text-sm text-gray-600">Loading client data…</p>
-      </div>
-    </div>
-  );
-
-  const { submission: s, files } = data;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-[#1a3a6b] text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
-          <div>
-            <h3 className="font-bold text-lg">{s.name}</h3>
-            <p className="text-blue-200 text-xs">{s.email} · {s.mobile}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Inner tabs */}
-        <div className="border-b border-gray-200 px-6 flex gap-1 flex-shrink-0">
-          {[["info","Info"], ["files","Files & AI"], ["registration","Registrations"]].map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors
-                ${activeTab === id ? "border-[#1a3a6b] text-[#1a3a6b]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
-            >
-              {label} {id === "files" && files.length > 0 && <span className="bg-[#1a3a6b] text-white text-xs px-1.5 py-0.5 rounded-full ml-1">{files.length}</span>}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* INFO TAB */}
-          {activeTab === "info" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  ["Portal Type", s.portal_type],
-                  ["Report Type", s.report_type],
-                  ["Constitution", s.constitution],
-                  ["Financial Year", s.financial_year || s.assessment_year],
-                  ["Sector", s.sector_group],
-                  ["Nature", s.nature_label],
-                  ["Purpose", s.purpose],
-                  ["Loan Type", s.loan_type],
-                  ["Submitted", new Date(s.created_at).toLocaleString("en-IN")],
-                  ["Consent", s.consent_given ? "✓ Given" : "✗ Not given"],
-                ].filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label} className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-0.5">{label}</p>
-                    <p className="text-sm font-semibold text-gray-800">{value}</p>
-                  </div>
-                ))}
-              </div>
-              {s.address && (
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-0.5">Address</p>
-                  <p className="text-sm text-gray-800">{s.address}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* FILES & AI TAB */}
-          {activeTab === "files" && (
-            <div className="space-y-4">
-              {files.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-8">No files uploaded for this submission.</p>
-              ) : (
-                files.map((f) => {
-                  const ext = f.file_name.split(".").pop().toLowerCase();
-                  const icon = ext === "pdf" ? "📄" : ext.startsWith("xls") ? "📊" : "📝";
-                  const a = f.ai_assessment;
-                  return (
-                    <div key={f.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                      {/* File header */}
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{icon}</span>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">{f.file_name}</p>
-                            <p className="text-xs text-gray-500">{(f.file_size / 1024).toFixed(0)} KB · {new Date(f.created_at).toLocaleDateString("en-IN")}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => openFile(f.storage_path, f.id)}
-                          className="text-xs bg-[#1a3a6b] text-white px-3 py-1.5 rounded-lg hover:bg-[#152f59] transition-all"
-                        >
-                          Open File
-                        </button>
-                      </div>
-
-                      {/* AI Assessment */}
-                      {a ? (
-                        <div className="p-4 space-y-3 text-sm">
-                          {a.summary && (
-                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                              <p className="text-xs font-bold text-blue-700 mb-1">AI Summary</p>
-                              <p className="text-gray-700">{a.summary}</p>
-                            </div>
-                          )}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {a.bank_accounts?.length > 0 && (
-                              <AssessSection title="🏦 Bank Accounts" items={a.bank_accounts.map((b) => `${b.bank} ${b.account_last4 ? `(…${b.account_last4})` : ""} ${b.type || ""} ${b.balance ? `· ₹${b.balance}` : ""}`)} />
-                            )}
-                            {a.loan_accounts?.length > 0 && (
-                              <AssessSection title="💰 Loan Accounts" items={a.loan_accounts.map((l) => `${l.lender} – ${l.loan_type || ""} ${l.outstanding ? `· O/S ₹${l.outstanding}` : ""}`)} />
-                            )}
-                            {a.properties?.length > 0 && (
-                              <AssessSection title="🏠 Properties" items={a.properties.map((p) => `${p.description} · ${p.location} ${p.value ? `· ₹${p.value}` : ""}`)} />
-                            )}
-                            {a.turnover?.length > 0 && (
-                              <AssessSection title="📊 Turnover / Income" items={a.turnover.map((t) => `${t.year}: ₹${t.amount} (${t.type || ""})`)} />
-                            )}
-                            {a.promoters?.length > 0 && (
-                              <AssessSection title="👤 Promoters / Partners" items={a.promoters} />
-                            )}
-                            {a.key_observations?.length > 0 && (
-                              <AssessSection title="📝 Key Observations" items={a.key_observations} />
-                            )}
-                          </div>
-                          {a.compliance_flags?.length > 0 && (
-                            <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                              <p className="text-xs font-bold text-red-700 mb-2">⚠ Compliance Flags</p>
-                              {a.compliance_flags.map((flag, i) => (
-                                <p key={i} className="text-xs text-red-700 flex items-start gap-1"><span>•</span>{flag}</p>
-                              ))}
-                            </div>
-                          )}
-                          {a.tax_details && Object.values(a.tax_details).some(Boolean) && (
-                            <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                              <p className="text-xs font-bold text-[#4a7c59] mb-2">Tax Registration Details</p>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {Object.entries(a.tax_details).filter(([,v]) => v).map(([k, v]) => (
-                                  <div key={k}><span className="text-gray-500 uppercase">{k.replace(/_/g, " ")}: </span><span className="font-mono font-bold">{v}</span></div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="p-4 text-center text-sm text-gray-400">
-                          {f.assessment_error
-                            ? <p className="text-red-500">AI assessment failed: {f.assessment_error}</p>
-                            : <p>AI assessment pending…</p>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {/* REGISTRATIONS TAB */}
-          {activeTab === "registration" && (
-            <div>
-              {s.registrations && Object.keys(s.registrations).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Object.entries(s.registrations).filter(([, v]) => v?.enabled).map(([key, val]) => (
-                    <div key={key} className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                      <span className="text-green-500 text-lg">✓</span>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">{key.toUpperCase()}</p>
-                        <p className="font-mono font-bold text-sm text-[#1a3a6b]">{val.number || "—"}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm text-center py-8">No registration details available.</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AssessSection({ title, items }) {
-  return (
-    <div className="bg-gray-50 rounded-lg p-3">
-      <p className="text-xs font-bold text-gray-600 mb-2">{title}</p>
-      {items.map((item, i) => (
-        <p key={i} className="text-xs text-gray-700 py-0.5 border-b border-gray-100 last:border-0">{item}</p>
-      ))}
     </div>
   );
 }
@@ -284,36 +57,41 @@ function AssessSection({ title, items }) {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function Dashboard({ onHome }) {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem("ka_dash_auth") === "1");
-  const [submissions, setSubmissions] = useState([]);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("all");
 
   useEffect(() => {
-    if (!authed) return;
+    if (!authed || !isAirtableEnabled) return;
     setLoading(true);
-    fetchSubmissions({ limit: 100 }).then(({ data }) => {
-      setSubmissions(data);
+    fetchFromAirtable().then(({ records: r }) => {
+      setRecords(r);
       setLoading(false);
     });
   }, [authed]);
 
   if (!authed) return <DashboardLogin onLogin={() => setAuthed(true)} />;
 
-  const filtered = submissions.filter((s) => {
-    const matchSearch = !search || [s.name, s.email, s.mobile, s.sector_group, s.nature_label]
+  const filtered = records.filter((r) => {
+    if (!search) return true;
+    const f = r.fields;
+    return [f["Name"], f["Email"], f["Mobile"], f["Sector Group"], f["Nature of Business"]]
       .some((v) => v?.toLowerCase().includes(search.toLowerCase()));
-    const matchType = filterType === "all" || s.portal_type === filterType || s.report_type === filterType;
-    return matchSearch && matchType;
   });
 
   const stats = {
-    total:       submissions.length,
-    client:      submissions.filter((s) => s.portal_type === "client").length,
-    professional: submissions.filter((s) => s.portal_type === "professional").length,
-    today:       submissions.filter((s) => new Date(s.created_at).toDateString() === new Date().toDateString()).length,
+    total:      records.length,
+    portal:     records.filter((r) => r.fields["Portal Type"] === "Client Portal").length,
+    pro:        records.filter((r) => r.fields["Portal Type"] === "Professional Tool").length,
+    today:      records.filter((r) => {
+      const d = r.fields["Submitted At"];
+      return d && new Date(d).toDateString() === new Date().toDateString();
+    }).length,
   };
+
+  const airtableUrl = AIRTABLE_BASE_ID
+    ? `https://airtable.com/${AIRTABLE_BASE_ID}`
+    : "https://airtable.com";
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -329,128 +107,250 @@ export default function Dashboard({ onHome }) {
           </div>
           <div>
             <p className="font-bold text-sm">K&amp;A Dashboard</p>
-            <p className="text-blue-300 text-xs">Kolte &amp; Associates LLP — Staff Portal</p>
+            <p className="text-blue-300 text-xs">Kolte &amp; Associates LLP</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <a
+            href={airtableUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-[#8ab45a] hover:bg-[#7aa34a] text-[#1a3a6b] font-bold text-xs px-3 py-1.5 rounded-lg transition-all"
+          >
+            <span>📊</span> Open Full Airtable
+          </a>
           <button onClick={onHome} className="text-blue-200 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">← Public Site</button>
           <button onClick={() => { sessionStorage.removeItem("ka_dash_auth"); setAuthed(false); }} className="text-blue-200 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">Sign Out</button>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Total Submissions", value: stats.total, color: "bg-[#1a3a6b]" },
-            { label: "Client Portal",     value: stats.client, color: "bg-[#4a7c59]" },
-            { label: "Professional Tool", value: stats.professional, color: "bg-[#8ab45a]" },
-            { label: "Today",             value: stats.today, color: "bg-amber-500" },
-          ].map((s) => (
-            <div key={s.label} className={`${s.color} text-white rounded-xl p-4`}>
-              <p className="text-3xl font-bold">{s.value}</p>
-              <p className="text-sm opacity-80 mt-0.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
 
-        {!isSupabaseEnabled && (
-          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-sm text-amber-800">
-            <strong>⚠ Supabase not connected.</strong> Add <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_URL</code> and <code className="bg-amber-100 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> to your <code>.env</code> file and redeploy.
-            See <code>supabase/schema.sql</code> for the database setup instructions.
+        {/* Airtable not configured warning */}
+        {!isAirtableEnabled && (
+          <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+            <div className="bg-amber-50 px-6 py-4 border-b border-amber-200">
+              <h2 className="font-bold text-amber-800 text-base flex items-center gap-2">
+                <span>⚠️</span> Airtable Not Connected Yet
+              </h2>
+              <p className="text-amber-700 text-sm mt-1">Follow these steps to connect your Airtable database:</p>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+
+              {/* Step 1 */}
+              <SetupStep num={1} title="Create a free Airtable account">
+                <p>Go to <strong>airtable.com</strong> → click <strong>Sign up for free</strong> → use your K&amp;A email.</p>
+              </SetupStep>
+
+              {/* Step 2 */}
+              <SetupStep num={2} title='Create a Base called "CompliancePro"'>
+                <p>After login → click <strong>+ Create a base</strong> → choose <strong>Start from scratch</strong> → name it <strong>CompliancePro</strong>.</p>
+              </SetupStep>
+
+              {/* Step 3 */}
+              <SetupStep num={3} title='Rename the default table to "Client Submissions"'>
+                <p>Click the tab that says <strong>Table 1</strong> at the top → right-click → <strong>Rename</strong> → type <strong>Client Submissions</strong> → press Enter.</p>
+              </SetupStep>
+
+              {/* Step 4 */}
+              <SetupStep num={4} title="Add these columns (fields) to the table">
+                <p className="mb-2">Click the <strong>+</strong> button on the right of the last column to add each field. Set the type shown:</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
+                    <thead><tr className="bg-[#1a3a6b] text-white"><th className="px-3 py-2 text-left">Field Name</th><th className="px-3 py-2 text-left">Field Type</th></tr></thead>
+                    <tbody>
+                      {[
+                        ["Portal Type",         "Single line text"],
+                        ["Report Type",         "Single line text"],
+                        ["Name",                "Single line text"],
+                        ["Email",               "Email"],
+                        ["Mobile",              "Phone number"],
+                        ["BAC Sector",          "Single line text"],
+                        ["Sector Group",        "Single line text"],
+                        ["Nature of Business",  "Single line text"],
+                        ["Constitution",        "Single line text"],
+                        ["Financial Year",      "Single line text"],
+                        ["Purpose",             "Single line text"],
+                        ["Loan Type",           "Single line text"],
+                        ["Registrations",       "Long text"],
+                        ["Selected Assignments","Long text"],
+                        ["Uploaded Files",      "Long text"],
+                        ["Consent Given",       "Checkbox"],
+                        ["Consent At",          "Single line text"],
+                        ["Submitted At",        "Single line text"],
+                      ].map(([name, type], i) => (
+                        <tr key={name} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="px-3 py-2 font-semibold">{name}</td>
+                          <td className="px-3 py-2 text-gray-500">{type}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </SetupStep>
+
+              {/* Step 5 */}
+              <SetupStep num={5} title="Get your Base ID">
+                <p>Look at the URL in your browser when you have the base open. It looks like:</p>
+                <code className="block bg-gray-100 rounded-lg px-3 py-2 text-xs mt-2 font-mono">
+                  https://airtable.com/<strong className="text-[#1a3a6b]">appXXXXXXXXXXXXXX</strong>/tblXXXXXX...
+                </code>
+                <p className="mt-2">Copy the part that starts with <strong>app</strong> (highlighted above). That is your <strong>Base ID</strong>.</p>
+              </SetupStep>
+
+              {/* Step 6 */}
+              <SetupStep num={6} title="Create a Personal Access Token">
+                <ol className="list-decimal list-inside space-y-1 text-sm">
+                  <li>Go to <strong>airtable.com/create/tokens</strong></li>
+                  <li>Click <strong>+ Create new token</strong></li>
+                  <li>Name it <strong>CompliancePro</strong></li>
+                  <li>Under <strong>Scopes</strong> — add: <code className="bg-gray-100 px-1 rounded text-xs">data.records:read</code> and <code className="bg-gray-100 px-1 rounded text-xs">data.records:write</code></li>
+                  <li>Under <strong>Access</strong> — select your <strong>CompliancePro</strong> base</li>
+                  <li>Click <strong>Create token</strong> — copy and save it immediately (shown only once)</li>
+                </ol>
+              </SetupStep>
+
+              {/* Step 7 */}
+              <SetupStep num={7} title="Add the keys to GitHub (so the live site works)">
+                <ol className="list-decimal list-inside space-y-1 text-sm">
+                  <li>Go to <strong>github.com/carohitai/compliancepro</strong></li>
+                  <li>Click <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
+                  <li>Click <strong>New repository secret</strong> and add these 3 secrets:</li>
+                </ol>
+                <div className="mt-3 space-y-2">
+                  {[
+                    ["VITE_AIRTABLE_TOKEN",   "The token you copied in step 6 (starts with pat...)"],
+                    ["VITE_AIRTABLE_BASE_ID", "The Base ID from step 5 (starts with app...)"],
+                    ["VITE_DASHBOARD_PASSWORD","A password for your K&A team to access this dashboard"],
+                  ].map(([name, desc]) => (
+                    <div key={name} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <p className="font-mono font-bold text-xs text-[#1a3a6b]">{name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </SetupStep>
+
+              {/* Step 8 */}
+              <SetupStep num={8} title="Update the GitHub Actions workflow to pass env vars">
+                <p className="text-sm">The workflow file needs to know about these secrets when building. This is already configured in the deploy.yml file — you just need to push a small change to re-trigger it, or manually run the workflow:</p>
+                <ol className="list-decimal list-inside space-y-1 text-sm mt-2">
+                  <li>Go to <strong>github.com/carohitai/compliancepro/actions</strong></li>
+                  <li>Click the <strong>Deploy to GitHub Pages</strong> workflow</li>
+                  <li>Click <strong>Run workflow</strong> → <strong>Run workflow</strong></li>
+                </ol>
+              </SetupStep>
+
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+                <p className="font-bold mb-1">✅ Once done:</p>
+                <p>Every time a client fills the form on your portal, their data will appear in your Airtable base automatically. You can view, filter, sort and export it from Airtable — no coding needed.</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Search & Filter */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-wrap gap-3">
-          <input
-            className="flex-1 min-w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]"
-            placeholder="Search by name, email, mobile…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b] bg-white"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="all">All Types</option>
-            <option value="client">Client Portal</option>
-            <option value="professional">Professional Tool</option>
-            <option value="compliance">Compliance Report</option>
-            <option value="requirement">Requirement Report</option>
-          </select>
-        </div>
+        {/* Stats — only show if Airtable is connected */}
+        {isAirtableEnabled && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Total Submissions", value: stats.total,  color: "bg-[#1a3a6b]" },
+                { label: "Client Portal",     value: stats.portal, color: "bg-[#4a7c59]" },
+                { label: "Professional Tool", value: stats.pro,    color: "bg-[#8ab45a]" },
+                { label: "Today",             value: stats.today,  color: "bg-amber-500" },
+              ].map((s) => (
+                <div key={s.label} className={`${s.color} text-white rounded-xl p-4`}>
+                  <p className="text-3xl font-bold">{s.value}</p>
+                  <p className="text-sm opacity-80 mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-bold text-gray-800 text-sm">Client Submissions ({filtered.length})</h3>
-            <p className="text-xs text-gray-400">Click any row to view details</p>
-          </div>
+            {/* Open Airtable CTA */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="font-bold text-gray-800">View full database in Airtable</p>
+                <p className="text-sm text-gray-500 mt-0.5">Filter, sort, search and export all client data from Airtable directly.</p>
+              </div>
+              <a
+                href={airtableUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#1a3a6b] hover:bg-[#152f59] text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2"
+              >
+                <span>📊</span> Open Airtable Dashboard
+              </a>
+            </div>
 
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin w-6 h-6 border-2 border-[#1a3a6b] border-t-transparent rounded-full mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Loading submissions…</p>
+            {/* Search + table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                <input
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]"
+                  placeholder="Quick search by name, email, mobile…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              {loading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin w-6 h-6 border-2 border-[#1a3a6b] border-t-transparent rounded-full mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Loading…</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
+                        {["Date", "Name", "Email", "Mobile", "Type", "Sector / Nature", "Purpose / FY"].map((h) => (
+                          <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filtered.length === 0 ? (
+                        <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No submissions yet.</td></tr>
+                      ) : filtered.map((r) => {
+                        const f = r.fields;
+                        return (
+                          <tr key={r.id} className="hover:bg-blue-50 transition-colors">
+                            <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                              {f["Submitted At"] ? new Date(f["Submitted At"]).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                            </td>
+                            <td className="px-4 py-3 font-semibold">{f["Name"] || "—"}</td>
+                            <td className="px-4 py-3 text-xs text-gray-500">{f["Email"] || "—"}</td>
+                            <td className="px-4 py-3 text-xs text-gray-500">{f["Mobile"] || "—"}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${f["Portal Type"] === "Client Portal" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                                {f["Portal Type"] === "Client Portal" ? "Client" : "Pro"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-gray-600">{f["Nature of Business"] || f["Constitution"] || "—"}</td>
+                            <td className="px-4 py-3 text-xs text-gray-600 capitalize">{f["Purpose"] || f["Financial Year"] || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm">
-              {isSupabaseEnabled ? "No submissions found." : "Connect Supabase to view submissions."}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
-                    <th className="px-4 py-3 text-left font-semibold">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold">Name</th>
-                    <th className="px-4 py-3 text-left font-semibold">Contact</th>
-                    <th className="px-4 py-3 text-left font-semibold">Nature</th>
-                    <th className="px-4 py-3 text-left font-semibold">Type</th>
-                    <th className="px-4 py-3 text-left font-semibold">Purpose</th>
-                    <th className="px-4 py-3 text-left font-semibold">Files</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((s) => (
-                    <tr
-                      key={s.id}
-                      onClick={() => setSelectedId(s.id)}
-                      className="hover:bg-blue-50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                        {new Date(s.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{s.name || "—"}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
-                        <p>{s.email}</p>
-                        <p>{s.mobile}</p>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{s.nature_label || s.constitution || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-                          ${s.portal_type === "client" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                          {s.portal_type === "client" ? "Client" : "Professional"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-600 capitalize">{s.report_type || s.purpose || "—"}</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-[#1a3a6b]">
-                        {s.file_count > 0 ? `${s.file_count} file${s.file_count > 1 ? "s" : ""}` : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
 
-      {/* Detail modal */}
-      {selectedId && (
-        <ClientDetailModal submissionId={selectedId} onClose={() => setSelectedId(null)} />
-      )}
+function SetupStep({ num, title, children }) {
+  return (
+    <div className="flex gap-4">
+      <div className="w-7 h-7 rounded-full bg-[#1a3a6b] text-white text-sm font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{num}</div>
+      <div className="flex-1">
+        <p className="font-bold text-gray-800 text-sm mb-2">{title}</p>
+        <div className="text-sm text-gray-600 space-y-1">{children}</div>
+      </div>
     </div>
   );
 }

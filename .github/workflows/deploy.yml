@@ -26,6 +26,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_AIRTABLE_TOKEN:    ${{ secrets.VITE_AIRTABLE_TOKEN }}
+          VITE_AIRTABLE_BASE_ID:  ${{ secrets.VITE_AIRTABLE_BASE_ID }}
+          VITE_DASHBOARD_PASSWORD: ${{ secrets.VITE_DASHBOARD_PASSWORD }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
