@@ -162,7 +162,99 @@ function ProfessionalTool({ onHome, consent }) {
   );
 }
 
-// ─── Client Portal ────────────────────────────────────────────────────────────
+// ─── Compliance Report Portal ─────────────────────────────────────────────────
+const CR_STEPS = [
+  { num: 1, label: "Your Details" },
+  { num: 2, label: "Report" },
+];
+
+function ComplianceReportPortal({ onHome, consent }) {
+  const [step, setStep] = useState(1);
+  const [clientInfo, setClientInfo] = useState(null);
+  function reset() { setStep(1); setClientInfo(null); }
+  async function handleNext(info) {
+    setClientInfo(info);
+    setStep(2);
+    savePortalSubmission({ clientInfo: info, reportType: "compliance", consent });
+  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      <AppHeader onHome={onHome} light />
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {step === 1 && <PortalStepIndicator step={step} steps={CR_STEPS} accentColor="#1a3a6b" />}
+        {step === 1 && <ClientPortalForm onNext={handleNext} />}
+        {step === 2 && <ComplianceReport clientInfo={clientInfo} onBack={() => setStep(1)} onReset={reset} />}
+      </main>
+    </div>
+  );
+}
+
+// ─── Requirements Checklist Portal ───────────────────────────────────────────
+const REQ_STEPS = [
+  { num: 1, label: "Your Details" },
+  { num: 2, label: "Checklist" },
+];
+
+function RequirementsChecklistPortal({ onHome, consent }) {
+  const [step, setStep] = useState(1);
+  const [clientInfo, setClientInfo] = useState(null);
+  function reset() { setStep(1); setClientInfo(null); }
+  async function handleNext(info) {
+    setClientInfo(info);
+    setStep(2);
+    savePortalSubmission({ clientInfo: info, reportType: "requirement", consent });
+  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50">
+      <AppHeader onHome={onHome} light />
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {step === 1 && <PortalStepIndicator step={step} steps={REQ_STEPS} accentColor="#4a7c59" />}
+        {step === 1 && <ClientPortalForm onNext={handleNext} />}
+        {step === 2 && (
+          <EnhancedRequirementForm clientInfo={clientInfo} onBack={() => setStep(1)} onReset={reset} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ─── Debt Sourcing Portal ─────────────────────────────────────────────────────
+const DEBT_STEPS = [
+  { num: 1, label: "Your Details" },
+  { num: 2, label: "Loan Details" },
+];
+
+const LOAN_PURPOSE = { value: "loan", label: "🏗️ Loan Application" };
+
+function DebtSourcingPortal({ onHome, consent }) {
+  const [step, setStep] = useState(1);
+  const [clientInfo, setClientInfo] = useState(null);
+  function reset() { setStep(1); setClientInfo(null); }
+  async function handleNext(info) {
+    setClientInfo(info);
+    setStep(2);
+    savePortalSubmission({ clientInfo: info, reportType: "debt_sourcing", consent });
+  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50">
+      <AppHeader onHome={onHome} light />
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {step === 1 && <PortalStepIndicator step={step} steps={DEBT_STEPS} accentColor="#b45309" />}
+        {step === 1 && <ClientPortalForm onNext={handleNext} />}
+        {step === 2 && (
+          <EnhancedRequirementForm
+            clientInfo={clientInfo}
+            defaultPurpose={LOAN_PURPOSE}
+            onBack={() => setStep(1)}
+            onReset={reset}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ─── Client Portal (legacy — kept for shareable URL backward compat) ──────────
 const PORTAL_STEPS = [
   { num: 1, label: "Your Details" },
   { num: 2, label: "Report Type" },
@@ -179,7 +271,6 @@ function ClientPortal({ onHome, consent }) {
   async function handleReportType(type) {
     setReportType(type);
     setStep(3);
-    // Save basic submission (files saved later in EnhancedRequirementForm)
     savePortalSubmission({ clientInfo, reportType: type, consent });
   }
 
@@ -244,8 +335,12 @@ export default function App() {
       <ConsentBanner onAccept={handleConsent} />
 
       {mode === "home" && <HomeScreen onSelectMode={selectMode} />}
-      {mode === "portal" && <ClientPortal onHome={() => selectMode("home")} consent={consent} />}
+      {mode === "compliance-report" && <ComplianceReportPortal onHome={() => selectMode("home")} consent={consent} />}
+      {mode === "requirements-checklist" && <RequirementsChecklistPortal onHome={() => selectMode("home")} consent={consent} />}
+      {mode === "debt-sourcing" && <DebtSourcingPortal onHome={() => selectMode("home")} consent={consent} />}
       {mode === "whatchanges" && <WhatChangesPortal onHome={() => selectMode("home")} initialClientInfo={sharedClientInfo} />}
+      {/* Legacy modes — kept for backward compatibility */}
+      {mode === "portal" && <ClientPortal onHome={() => selectMode("home")} consent={consent} />}
       {mode === "professional" && <ProfessionalTool onHome={() => selectMode("home")} consent={consent} />}
     </>
   );

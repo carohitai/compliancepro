@@ -51,9 +51,9 @@ const purposeToAssignment = {
   loan: "project_finance",
 };
 
-export default function EnhancedRequirementForm({ clientInfo, onBack, onReset }) {
+export default function EnhancedRequirementForm({ clientInfo, onBack, onReset, defaultPurpose = null }) {
   const [files, setFiles] = useState([]);
-  const [purpose, setPurpose] = useState(null);
+  const [purpose, setPurpose] = useState(defaultPurpose);
   const [loanType, setLoanType] = useState(null);
   const [generated, setGenerated] = useState(false);
 
@@ -150,47 +150,51 @@ export default function EnhancedRequirementForm({ clientInfo, onBack, onReset })
         )}
       </div>
 
-      {/* Step B – Purpose */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#4a7c59] text-white text-xs flex items-center justify-center font-bold">B</span>
-          Purpose of Checklist <span className="text-red-500 text-sm ml-0.5">*</span>
-        </h3>
-        <p className="text-xs text-gray-500 mb-4 ml-8">Select what this requirement checklist will be used for</p>
+      {/* Step B – Purpose (hidden when defaultPurpose is pre-set) */}
+      {!defaultPurpose && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-[#4a7c59] text-white text-xs flex items-center justify-center font-bold">B</span>
+            Purpose of Checklist <span className="text-red-500 text-sm ml-0.5">*</span>
+          </h3>
+          <p className="text-xs text-gray-500 mb-4 ml-8">Select what this requirement checklist will be used for</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          {PURPOSE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setPurpose(opt); setLoanType(null); }}
-              className={`text-left p-3 rounded-xl border-2 transition-all text-sm font-semibold
-                ${purpose?.value === opt.value
-                  ? "border-[#4a7c59] bg-green-50 text-[#4a7c59]"
-                  : "border-gray-200 hover:border-gray-300 text-gray-700"}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Loan type sub-selection */}
-        {isLoan && (
-          <div className="mt-2 p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              Type of Loan <span className="text-red-500">*</span>
-            </label>
-            <Select
-              options={LOAN_TYPES}
-              value={loanType}
-              onChange={setLoanType}
-              placeholder="Search and select loan type..."
-              styles={selectStyles}
-              isSearchable
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {PURPOSE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setPurpose(opt); setLoanType(null); }}
+                className={`text-left p-3 rounded-xl border-2 transition-all text-sm font-semibold
+                  ${purpose?.value === opt.value
+                    ? "border-[#4a7c59] bg-green-50 text-[#4a7c59]"
+                    : "border-gray-200 hover:border-gray-300 text-gray-700"}`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Loan type sub-selection — always visible when purpose is loan */}
+      {isLoan && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">{defaultPurpose ? "B" : "C"}</span>
+            Type of Loan <span className="text-red-500 text-sm ml-0.5">*</span>
+          </h3>
+          <p className="text-xs text-gray-500 mb-4 ml-8">Select the category of debt facility being sourced</p>
+          <Select
+            options={LOAN_TYPES}
+            value={loanType}
+            onChange={setLoanType}
+            placeholder="Search and select loan type..."
+            styles={selectStyles}
+            isSearchable
+          />
+        </div>
+      )}
 
       <div className="flex justify-between">
         <button onClick={onBack} className="border border-gray-300 text-gray-600 hover:bg-gray-50 font-semibold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
@@ -200,7 +204,7 @@ export default function EnhancedRequirementForm({ clientInfo, onBack, onReset })
           Back
         </button>
         <button
-          disabled={!purpose || (isLoan && !loanType)}
+          disabled={!purpose || (isLoan && !loanType && !defaultPurpose) || (defaultPurpose?.value === "loan" && !loanType)}
           onClick={handleGenerate}
           className="bg-[#4a7c59] hover:bg-[#3d6b4a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-xl shadow-sm flex items-center gap-2"
         >

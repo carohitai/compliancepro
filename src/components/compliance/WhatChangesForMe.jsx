@@ -562,7 +562,6 @@ export default function WhatChangesForMe({ clientInfo }) {
       {/* ── NOMENCLATURE ──────────────────────────────────────────────────────── */}
       {activeTab === "nomenclature" && (
         <div>
-          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-800">
             <strong>What this means:</strong> The new Income Tax Act replaces legal jargon with plain language.
             All forms, notices and correspondence from the Income Tax Department will use new terminology from TY 2026-27 onwards.
@@ -601,7 +600,6 @@ export default function WhatChangesForMe({ clientInfo }) {
       {/* ── OPERATIONS ────────────────────────────────────────────────────────── */}
       {activeTab === "operations" && (
         <div className="space-y-4">
-          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
           {opCategories.map((catKey) => {
             const items = OPERATIONAL_CHANGES[catKey];
             if (!items || items.length === 0) return null;
@@ -633,7 +631,6 @@ export default function WhatChangesForMe({ clientInfo }) {
       {/* ── RATES ─────────────────────────────────────────────────────────────── */}
       {activeTab === "rates" && (
         <div className="space-y-4">
-          <ConstitutionFilter constitution={constitution} onChange={setConstitution} />
           {visibleRates.map((cat, ci) => (
             <div key={ci} className={`border rounded-xl overflow-hidden ${cat.changed ? "border-amber-300" : "border-gray-200"}`}>
               <div className={`px-4 py-3 flex items-center justify-between ${cat.changed ? "bg-amber-50" : "bg-gray-50"}`}>
