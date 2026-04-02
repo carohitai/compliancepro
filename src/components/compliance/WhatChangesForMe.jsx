@@ -79,7 +79,7 @@ _This message is for informational purposes only and does not constitute profess
 // Nextel WhatsApp Business API — send_template endpoint (API_V2)
 const NEXTEL_SEND_URL = "https://api.nextel.io/API_V2/Whatsapp/send_template/ZlVhbG5hS3J3SElqMnllNUJsUllGZz09";
 // corsproxy.io forwards the request server-side — bypasses browser CORS restriction
-const CORS_PROXY = "https://corsproxy.io/?";
+const CORS_PROXY = "https://corsproxy.io/?url=";
 
 /**
  * Dispatches the Nextel send_template call.
@@ -105,7 +105,7 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
   const body = JSON.stringify(payload);
   const jsonHeaders = { "Content-Type": "application/json" };
 
-  // ── Try 1: via corsproxy.io (bypasses CORS, sends proper application/json) ──
+  // ── Try 1: via corsproxy.io (fixed url= param format) ───────────────────
   try {
     const res = await fetch(CORS_PROXY + encodeURIComponent(NEXTEL_SEND_URL), {
       method: "POST",
@@ -113,26 +113,26 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
       body,
     });
     if (res.ok) return;
-    throw new Error(`proxy HTTP ${res.status}`);
-  } catch { /* try direct next */ }
+    throw new Error(`proxy1 HTTP ${res.status}`);
+  } catch { /* try backup proxy */ }
 
-  // ── Try 2: direct call (works if Nextel adds CORS headers in future) ─────
+  // ── Try 2: allorigins.win as backup CORS proxy ───────────────────────────
   try {
-    const res = await fetch(NEXTEL_SEND_URL, {
-      method: "POST",
-      headers: jsonHeaders,
-      body,
-    });
+    const res = await fetch(
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(NEXTEL_SEND_URL)}`,
+      { method: "POST", headers: jsonHeaders, body }
+    );
     if (res.ok) return;
-  } catch { /* try no-cors last */ }
+    throw new Error(`proxy2 HTTP ${res.status}`);
+  } catch { /* try direct last */ }
 
-  // ── Try 3: no-cors last resort (request fires, response is opaque) ────────
-  await fetch(NEXTEL_SEND_URL, {
+  // ── Try 3: direct call (works if Nextel adds CORS headers in future) ─────
+  const res = await fetch(NEXTEL_SEND_URL, {
     method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain" },
+    headers: jsonHeaders,
     body,
   });
+  if (!res.ok) throw new Error(`direct HTTP ${res.status}`);
 }
 
 /**
