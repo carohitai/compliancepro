@@ -516,46 +516,44 @@ export default function WhatChangesForMe({ clientInfo }) {
       </div>
 
       {/* Sticky action strip — always visible below the header */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm no-print -mx-4 px-4 py-2.5 mb-4">
-        <div className="flex items-center justify-between gap-2">
-          {/* Tabs — scroll horizontally on mobile */}
-          <div className="overflow-x-auto flex-1 pb-0.5">
-            <div className="flex gap-2 min-w-max">
-              {INNER_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap
-                    ${activeTab === tab.id
-                      ? "bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#1a3a6b] hover:text-[#1a3a6b]"}`}
-                >
-                  <span>{tab.icon}</span> {tab.label}
-                </button>
-              ))}
-            </div>
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm no-print -mx-4 px-4 pt-2.5 pb-2 mb-4">
+        {/* Row 1: Tabs */}
+        <div className="overflow-x-auto pb-2">
+          <div className="flex justify-center gap-2 min-w-max mx-auto">
+            {INNER_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap
+                  ${activeTab === tab.id
+                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-sm"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-[#1a3a6b] hover:text-[#1a3a6b]"}`}
+              >
+                <span>{tab.icon}</span> {tab.label}
+              </button>
+            ))}
           </div>
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={handleDownloadPdf}
-              disabled={pdfGenerating}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm
-                ${pdfGenerating
-                  ? "bg-gray-200 text-gray-400 cursor-wait"
-                  : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
-            >
-              {pdfGenerating ? <>⏳</> : (
-                <>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="hidden sm:inline">Download PDF</span>
-                </>
-              )}
-            </button>
-            <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} compact />
-          </div>
+        </div>
+        {/* Row 2: Action buttons — centred */}
+        <div className="flex justify-center items-center gap-3">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfGenerating}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-sm
+              ${pdfGenerating
+                ? "bg-gray-200 text-gray-400 cursor-wait"
+                : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
+          >
+            {pdfGenerating ? <>⏳</> : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF
+              </>
+            )}
+          </button>
+          <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} compact />
         </div>
       </div>
 
@@ -738,26 +736,6 @@ export default function WhatChangesForMe({ clientInfo }) {
 
       {/* Footer */}
       <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        {/* WhatsApp CTA */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-gray-200 no-print">
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Export &amp; Share</p>
-            <p className="text-xs text-gray-500 mt-0.5">Download a branded PDF or send directly on WhatsApp</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleDownloadPdf}
-              disabled={pdfGenerating}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm
-                ${pdfGenerating ? "bg-gray-200 text-gray-400 cursor-wait" : "bg-[#1a3a6b] hover:bg-[#0f2548] text-white hover:shadow-md"}`}
-            >
-              {pdfGenerating ? <>⏳ Generating…</> : (
-                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>Download PDF</>
-              )}
-            </button>
-            <SendWhatsAppButton clientInfo={clientInfo} highlights={highlights} />
-          </div>
-        </div>
         <p className="text-xs font-semibold text-gray-600 mb-1">Kolte &amp; Associates LLP, Chartered Accountants</p>
         <p className="text-xs text-gray-500">
           This report is based on the Income Tax Bill, 2025 as introduced in Parliament on 13 February 2025.

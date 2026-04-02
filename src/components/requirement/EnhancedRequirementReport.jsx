@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ALL_REQUIREMENTS } from "../../data/requirements";
+import { ALL_REQUIREMENTS, LOAN_SPECIFIC_SECTIONS, getKycSection } from "../../data/requirements";
 import { BANK_RATES, LOAN_DISCLAIMER } from "../../data/bankRates";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -22,6 +22,17 @@ export default function EnhancedRequirementReport({ clientInfo, purpose, loanTyp
   const assignmentKey = purposeToAssignment[purpose.value];
   const req = ALL_REQUIREMENTS[assignmentKey];
   const isLoan = purpose.value === "loan";
+  const constitution = clientInfo?.constitution?.label || clientInfo?.constitution || null;
+
+  // Build dynamic sections for loan: constitution-aware KYC + loan-type-specific docs
+  const loanSections = isLoan ? (() => {
+    const base = req ? req.sections.filter(s => s.title !== "KYC & Entity Documents") : [];
+    const kycSection = getKycSection(constitution);
+    const loanSpecific = loanType ? LOAN_SPECIFIC_SECTIONS[loanType.value] : null;
+    return [kycSection, ...base, ...(loanSpecific ? [loanSpecific] : [])];
+  })() : null;
+
+  const displaySections = isLoan ? loanSections : req?.sections;
 
   async function exportPDF() {
     if (!reportRef.current) return;
@@ -120,11 +131,16 @@ export default function EnhancedRequirementReport({ clientInfo, purpose, loanTyp
 
         <div className="px-8 py-6 space-y-6">
           {/* Requirement checklist */}
-          {req && (
+          {displaySections && (
             <div>
-              <h2 className="text-lg font-bold text-[#4a7c59] mb-4">{req.label} — Document Checklist</h2>
+              <h2 className="text-lg font-bold text-[#4a7c59] mb-4">
+                {isLoan ? `${loanType?.label || "Loan"} — Document Checklist` : `${req.label} — Document Checklist`}
+                {constitution && isLoan && (
+                  <span className="ml-2 text-sm font-normal text-gray-500">({constitution})</span>
+                )}
+              </h2>
               <div className="space-y-4">
-                {req.sections.map((section, sIdx) => (
+                {displaySections.map((section, sIdx) => (
                   <div key={sIdx} className="border border-gray-200 rounded-xl overflow-hidden">
                     <div className="bg-[#f0f7f3] px-4 py-2.5 border-b border-gray-200">
                       <h3 className="text-sm font-bold text-[#4a7c59] flex items-center gap-2">

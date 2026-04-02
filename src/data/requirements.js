@@ -350,6 +350,163 @@ const GST_AUDIT_REQUIREMENTS = {
   },
 };
 
+// Constitution types that require entity-level KYC (MOA, AOA, incorporation etc.)
+export const ENTITY_CONSTITUTION_TYPES = [
+  "Private Limited Company",
+  "Public Limited Company",
+  "Limited Liability Partnership (LLP)",
+  "Trust",
+  "Society",
+];
+
+// Base KYC items applicable to ALL constitutions
+const KYC_BASE_ITEMS = [
+  "PAN Card of entity and all promoters / partners / directors",
+  "Aadhaar Card of all promoters / partners / directors",
+  "Passport / Voter ID of promoters (as applicable)",
+  "Latest utility bill / rent agreement as address proof",
+];
+
+// Additional KYC items only for companies, LLPs, trusts, societies
+const KYC_ENTITY_ITEMS = [
+  "MOA & AOA with all amendments",
+  "Certificate of Incorporation / Registration certificate",
+  "Board resolution / authority letter for borrowing",
+  "List of directors / partners / shareholders with addresses",
+  "KYC of all promoters / directors / partners (individual KYC)",
+];
+
+// Loan-type-specific document sections
+export const LOAN_SPECIFIC_SECTIONS = {
+  home_loan: {
+    title: "Home Loan — Specific Documents",
+    items: [
+      "Approved building plan / layout plan (from municipal authority)",
+      "Housing Sanction Plan from concerned authority",
+      "Building permissions / commencement certificate",
+      "Sale agreement / allotment letter from builder",
+      "Title deed / property card / 7-12 extract",
+      "Encumbrance certificate (EC) for last 13 years",
+      "NOC from builder / housing society",
+      "Occupancy / completion certificate (for ready properties)",
+      "Chain of title documents (all previous sale deeds)",
+      "Property tax paid receipts",
+      "RERA registration of project (if applicable)",
+    ],
+  },
+  lap: {
+    title: "LAP (Loan Against Property) — Specific Documents",
+    items: [
+      "Title deed / sale deed of property offered as collateral",
+      "Property valuation report from bank-approved valuer",
+      "Encumbrance certificate (EC) for last 13 years",
+      "Search report / legal opinion on property",
+      "Current tenancy agreement / rental income proof (if rented)",
+      "Latest property tax paid receipts",
+      "Insurance on the mortgaged property",
+      "NOC from existing mortgage holders (if any)",
+    ],
+  },
+  business_loan: {
+    title: "Business Loan — Specific Documents",
+    items: [
+      "CIBIL report / credit score (entity and promoters)",
+      "ITR with computation – last 3 years",
+      "GST returns (GSTR-1, GSTR-3B) – last 12 months",
+      "Bank statements – primary operative account – last 12 months",
+      "Business proof / vintage certificate",
+      "Trade licence / shop establishment certificate",
+      "Stock / debtor statements (if working capital component)",
+    ],
+  },
+  working_capital: {
+    title: "Working Capital — Specific Documents",
+    items: [
+      "Debtors ageing statement (as of date)",
+      "Creditors ageing statement (as of date)",
+      "Stock statement with valuation (as of date)",
+      "GSTR-1 / GSTR-3B – last 12 months",
+      "Bank statements – all CC / OD accounts – last 12 months",
+      "Sanction letters of existing working capital facilities",
+      "Drawing power calculation statement",
+    ],
+  },
+  term_loan: {
+    title: "Term Loan — Specific Documents",
+    items: [
+      "Capital expenditure details and purpose",
+      "Quotations / estimates for assets / machinery",
+      "Proposed repayment schedule",
+      "Technical report / feasibility study (if applicable)",
+      "Bank statements – last 12 months",
+      "Existing term loan statements (if any)",
+    ],
+  },
+  personal_loan: {
+    title: "Personal Loan — Specific Documents",
+    items: [
+      "Salary slips – last 3 months (for salaried)",
+      "Form 16 / ITR – last 2 years",
+      "Bank statements – salary account – last 6 months",
+      "Employment offer letter / appointment letter",
+      "CIBIL score / credit report",
+    ],
+  },
+  vehicle_loan: {
+    title: "Vehicle Loan — Specific Documents",
+    items: [
+      "Proforma invoice / quotation from dealer",
+      "Driving licence copy",
+      "Vehicle insurance proposal",
+      "RC book (for used vehicle loan)",
+      "NOC from previous financer (for used vehicle)",
+    ],
+  },
+  education_loan: {
+    title: "Education Loan — Specific Documents",
+    items: [
+      "Admission letter / offer letter from institution",
+      "Fee structure / course details",
+      "Academic records (marksheets, certificates)",
+      "Collateral documents (property / FD) if loan > ₹7.5 lakh",
+      "Co-borrower (parent / guardian) income proof",
+    ],
+  },
+  mudra: {
+    title: "Mudra / MSME Loan — Specific Documents",
+    items: [
+      "Udyam Registration Certificate",
+      "Business proof / vintage certificate",
+      "GST registration certificate",
+      "Bank statements – last 6 months",
+      "Quotations for machinery / equipment (for Kishor / Tarun)",
+    ],
+  },
+  msme: {
+    title: "MSME Loan — Specific Documents",
+    items: [
+      "Udyam Registration Certificate",
+      "MSME / SSI registration (if applicable)",
+      "GST returns – last 12 months",
+      "Bank statements – last 12 months",
+      "Project report / business plan",
+    ],
+  },
+};
+
+// Build constitution-aware KYC section
+export function getKycSection(constitution) {
+  const isEntity = constitution && ENTITY_CONSTITUTION_TYPES.some(
+    (t) => constitution.toLowerCase().includes(t.toLowerCase().split(" ")[0])
+  );
+  return {
+    title: "KYC & Identity Documents",
+    items: isEntity
+      ? [...KYC_BASE_ITEMS, ...KYC_ENTITY_ITEMS]
+      : KYC_BASE_ITEMS,
+  };
+}
+
 const PROJECT_FINANCE_REQUIREMENTS = {
   project_finance: {
     label: "Project Finance",
@@ -360,11 +517,11 @@ const PROJECT_FINANCE_REQUIREMENTS = {
           "PAN Card of entity and promoters / directors / partners",
           "Aadhaar Card of all promoters / directors / partners",
           "Passport / Voter ID of promoters (as applicable)",
-          "MOA & AOA with all amendments (for companies)",
-          "Partnership deed / LLP Agreement (for firms / LLPs)",
-          "Certificate of Incorporation / Registration certificate",
-          "Board resolution / authority letter for borrowing",
-          "List of directors / partners / shareholders with addresses",
+          "MOA & AOA with all amendments (for companies / LLPs only)",
+          "Partnership deed / LLP Agreement (for firms / LLPs only)",
+          "Certificate of Incorporation / Registration certificate (for companies / LLPs / trusts only)",
+          "Board resolution / authority letter for borrowing (for companies / LLPs only)",
+          "List of directors / partners / shareholders with addresses (for companies / LLPs only)",
         ],
       },
       {
@@ -412,19 +569,6 @@ const PROJECT_FINANCE_REQUIREMENTS = {
           "Supplier / vendor details with quotations",
           "Export orders (for export finance)",
           "Stock statements (for working capital limits)",
-        ],
-      },
-      {
-        title: "Loan Type Specific",
-        items: [
-          "Term Loan – capital expenditure details, payback schedule",
-          "Working Capital – debtors / creditors / stock ageing",
-          "Home Loan – property documents, builder NOC, approved plan",
-          "LAP – property documents, current tenancy / rental income",
-          "Business Loan – CIBIL report, ITR, GST returns",
-          "Mudra / MSME Loan – Udyam certificate, business proof",
-          "Education Loan – admission letter, fee structure, collateral",
-          "Vehicle Loan – quotation, driving licence, insurance",
         ],
       },
     ],

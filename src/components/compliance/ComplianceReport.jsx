@@ -7,6 +7,7 @@ import {
 import {
   ASSESSMENT_YEARS, TDS_SECTIONS, CASH_LIMITS,
   TURNOVER_LIMITS, DUE_DATES, SECTOR_COMPLIANCE, KEY_AMENDMENTS,
+  INDIVIDUAL_COMPLIANCE, getIndividualComplianceKey,
 } from "../../data/complianceData";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -65,6 +66,8 @@ export default function ComplianceReport({ clientInfo, onBack, onReset }) {
 
   const sectorKey = getSectorKey(clientInfo.sector);
   const sectorData = SECTOR_COMPLIANCE[sectorKey] || SECTOR_COMPLIANCE.services;
+  const individualKey = getIndividualComplianceKey(clientInfo);
+  const individualData = individualKey ? INDIVIDUAL_COMPLIANCE[individualKey] : null;
   const dueDates = DUE_DATES[ay?.value] || DUE_DATES["2025-26"];
 
   const tdsChartData = TDS_SECTIONS.slice(0, 12).map((s) => ({
@@ -241,29 +244,84 @@ export default function ComplianceReport({ clientInfo, onBack, onReset }) {
           {/* ── COMPLIANCE TAB ───────────────────────────────────────────────── */}
           {activeTab === "compliance" && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Key Compliance Points – {sectorData.label}</h3>
-                <div className="space-y-2">
-                  {sectorData.keyChanges.map((pt, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                      <span className="w-5 h-5 rounded-full bg-[#1a3a6b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
-                      <p className="text-sm text-gray-700">{pt}</p>
+              {individualData ? (
+                <>
+                  {/* Individual / Salaried / HUF specific compliance */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Key Compliance — {individualData.label}</h3>
+                    <div className="space-y-2">
+                      {individualData.keyCompliance.map((pt, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                          <span className="w-5 h-5 rounded-full bg-[#1a3a6b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                          <p className="text-sm text-gray-700">{pt}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Key TDS sections for this sector */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">TDS Sections Applicable to Your Sector</h3>
-                <div className="flex flex-wrap gap-2">
-                  {sectorData.tdsHighlight.map((t) => (
-                    <span key={t} className="bg-[#1a3a6b] text-white text-xs font-semibold px-3 py-1.5 rounded-full">{t}</span>
-                  ))}
-                </div>
-              </div>
+                  {/* Applicable TDS sections */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">TDS Sections Applicable to You</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {individualData.tdsSections.map((t) => (
+                        <span key={t} className="bg-[#1a3a6b] text-white text-xs font-semibold px-3 py-1.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Amendments summary chart */}
+                  {/* Deductions table */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Key Deductions Available</h3>
+                    <div className="overflow-x-auto rounded-xl border border-gray-200">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-[#1a3a6b] text-white">
+                            {["Section", "Description", "Limit"].map((h) => (
+                              <th key={h} className="px-3 py-2.5 text-left font-semibold">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {individualData.deductions.map((d, i) => (
+                            <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                              <td className="px-3 py-2 font-mono font-bold text-[#1a3a6b]">{d.section}</td>
+                              <td className="px-3 py-2">{d.description}</td>
+                              <td className="px-3 py-2 font-semibold text-[#4a7c59]">{d.limit}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Business / entity sector-based compliance */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Key Compliance Points – {sectorData.label}</h3>
+                    <div className="space-y-2">
+                      {sectorData.keyChanges.map((pt, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                          <span className="w-5 h-5 rounded-full bg-[#1a3a6b] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                          <p className="text-sm text-gray-700">{pt}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Key TDS sections for this sector */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">TDS Sections Applicable to Your Sector</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {sectorData.tdsHighlight.map((t) => (
+                        <span key={t} className="bg-[#1a3a6b] text-white text-xs font-semibold px-3 py-1.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Amendments summary chart — shown for all */}
               <div>
                 <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Key Amendments by Impact Level ({ay?.label})</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

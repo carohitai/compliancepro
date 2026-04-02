@@ -249,7 +249,111 @@ export const SECTOR_COMPLIANCE = {
   },
 };
 
-// ─── Recent Key Amendments (FY 2024-25) ──────────────────────────────────────
+// ─── Constitution-specific Compliance ────────────────────────────────────────
+// Used when clientInfo.constitution is Individual / Salaried / HUF etc.
+export const INDIVIDUAL_COMPLIANCE = {
+  salaried: {
+    label: "Individual – Salaried",
+    keyCompliance: [
+      "Submit investment declaration (Form 12BB) to HR at start of year — affects TDS deduction from salary",
+      "Submit actual investment proofs to employer by Feb/Mar — prevents excess TDS or short deduction",
+      "Report additional income (rent, interest, capital gains) to employer or pay advance tax directly",
+      "File ITR-1 or ITR-2 based on income type — deadline 31 Jul (non-audit cases)",
+      "Verify Form 26AS and AIS before filing to ensure all TDS credits are reflected",
+      "Claim 80C deductions (LIC, PPF, ELSS, tuition fees, home loan principal) up to ₹1.5 lakh",
+      "Claim 80D for health insurance premium — ₹25,000 (self/family) + ₹25,000 (parents)",
+      "If switching jobs: collect Form 16 from all employers; disclose previous salary to new employer",
+      "Maintain proofs for all deductions claimed for 6 years (in case of scrutiny)",
+    ],
+    tdsSections: [
+      "§192 – TDS on salary (by employer as per slab)",
+      "§194A – TDS on interest income > ₹40,000 (banks)",
+      "§194IB – TDS on rent paid > ₹50,000/month (by individual)",
+      "§194IA – TDS @ 1% on property purchase > ₹50 lakh",
+      "§194M – TDS @ 5% on contractor/professional fees > ₹50 lakh (by individual)",
+      "§194S – TDS @ 1% on crypto/VDA transfers > ₹50,000",
+    ],
+    deductions: [
+      { section: "80C", description: "LIC, PPF, ELSS, tuition fees, home loan principal", limit: "₹1,50,000" },
+      { section: "80CCD(1B)", description: "Additional NPS contribution", limit: "₹50,000" },
+      { section: "80D", description: "Health insurance – self/family + parents", limit: "₹25,000 + ₹25,000" },
+      { section: "80E", description: "Interest on education loan", limit: "No limit (8 years)" },
+      { section: "80EEA", description: "Additional interest on affordable housing loan", limit: "₹1,50,000" },
+      { section: "80G", description: "Donations to approved funds (cash max ₹2,000)", limit: "50%–100% of donation" },
+      { section: "24(b)", description: "Home loan interest (self-occupied)", limit: "₹2,00,000" },
+      { section: "10(13A)", description: "HRA exemption (if not opting new regime)", limit: "Least of: actual HRA / 50% salary (metro) / rent paid – 10% salary" },
+    ],
+  },
+  individual_business: {
+    label: "Individual – Business / Professional",
+    keyCompliance: [
+      "Presumptive taxation u/s 44AD available if turnover ≤ ₹3 Cr (95% digital) — declare 8%/6% as income",
+      "Presumptive taxation u/s 44ADA for professionals if gross receipts ≤ ₹75 lakh — declare 50% as income",
+      "If not opting presumptive: maintain books of accounts; get tax audit if turnover > ₹1 Cr (₹10 Cr digital)",
+      "Advance tax mandatory if tax liability > ₹10,000 — pay in 4 instalments (Jun/Sep/Dec/Mar)",
+      "File ITR-3 (business/profession income) — deadline 31 Jul (or 31 Oct if audit required)",
+      "GST registration mandatory if turnover > ₹20 lakh (₹10 lakh for special category states)",
+      "TDS deducted by payers on professional fees (§194J) — reconcile with Form 26AS",
+      "Deduct TDS on contractor/professional payments if books are subject to audit",
+    ],
+    tdsSections: [
+      "§194J – TDS on professional fees received (by payer @ 10%)",
+      "§194C – TDS on contract receipts (by payer @ 1% individual)",
+      "§194A – TDS on interest earned",
+      "§194IB – TDS on rent paid > ₹50,000/month",
+      "§194M – Deduct TDS on contractor/professional fees > ₹50 lakh",
+    ],
+    deductions: [
+      { section: "80C", description: "LIC, PPF, ELSS, tuition fees, home loan principal", limit: "₹1,50,000" },
+      { section: "80D", description: "Health insurance – self/family + parents", limit: "₹25,000 + ₹25,000" },
+      { section: "Sec 30-37", description: "Business expenses (rent, salary, depreciation, etc.)", limit: "Actual (as per books)" },
+      { section: "44AD/44ADA", description: "Presumptive income declaration", limit: "6%/8% of turnover or 50% of gross receipts" },
+    ],
+  },
+  huf: {
+    label: "Hindu Undivided Family (HUF)",
+    keyCompliance: [
+      "HUF is a separate taxable entity — file separate ITR (ITR-2 or ITR-3) for HUF income",
+      "HUF can claim basic exemption limit (₹2.5 lakh old regime / ₹3 lakh new regime) separately",
+      "HUF cannot claim 80C deductions for individual contributions — only HUF-level investments qualify",
+      "Gifts received by HUF from members not taxable; from non-members taxable if > ₹50,000",
+      "Partition of HUF has specific tax implications — consult CA before partial/total partition",
+      "PAN for HUF is mandatory; separate bank account should be maintained for HUF transactions",
+      "Karta (head) responsible for filing ITR and maintaining books on behalf of HUF",
+    ],
+    tdsSections: [
+      "§192A – TDS on PF withdrawal",
+      "§194A – TDS on interest income",
+      "§194C – TDS @ 1% on contracts (individual/HUF rate)",
+      "§194IB – TDS @ 5% on rent > ₹50,000/month",
+      "§194M – TDS on contractor/professional fees > ₹50 lakh",
+    ],
+    deductions: [
+      { section: "80C", description: "HUF-level investments (LIC, ELSS, NSC etc.)", limit: "₹1,50,000" },
+      { section: "80D", description: "Health insurance for HUF members", limit: "₹25,000" },
+      { section: "24(b)", description: "Home loan interest on HUF property", limit: "₹2,00,000" },
+    ],
+  },
+};
+
+// Detect if clientInfo is an individual / salaried / HUF constitution
+export function getIndividualComplianceKey(clientInfo) {
+  const constitution = (clientInfo?.constitution?.label || clientInfo?.constitution || "").toLowerCase();
+  const nature = (clientInfo?.nature?.label || "").toLowerCase();
+  if (constitution.includes("huf") || constitution.includes("hindu")) return "huf";
+  if (
+    constitution.includes("individual") ||
+    constitution.includes("proprietor") ||
+    nature.includes("salaried") ||
+    nature.includes("individual")
+  ) {
+    const isBusiness = nature.includes("business") || nature.includes("professional") || nature.includes("freelan");
+    return isBusiness ? "individual_business" : "salaried";
+  }
+  return null; // not individual — use sector-based compliance
+}
+
+
 export const KEY_AMENDMENTS = [
   {
     title: "New Tax Regime – Default Regime",
