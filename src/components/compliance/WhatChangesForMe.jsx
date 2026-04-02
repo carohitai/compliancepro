@@ -15,6 +15,7 @@ import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
 import { generateWhatChangesPdf, buildPdfBlob } from "../../lib/generateWhatChangesPdf";
 import { uploadPdfBlob } from "../../lib/uploadPdf";
 import { generateShareableReportUrl } from "../../lib/generateShareableUrl";
+import { supabase, isSupabaseEnabled } from "../../lib/supabase";
 
 // ── WhatsApp message generator ─────────────────────────────────────────────
 function buildWhatsAppMessage(clientInfo, highlights) {
@@ -105,7 +106,16 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
   const body = JSON.stringify(payload);
   const jsonHeaders = { "Content-Type": "application/json" };
 
-  // ── Try 1: via corsproxy.io (fixed url= param format) ───────────────────
+  // ── Try 1: Supabase edge function (server-side, no CORS issues) ─────────
+  if (isSupabaseEnabled && supabase) {
+    try {
+      const { error } = await supabase.functions.invoke("send-whatsapp", { body: payload });
+      if (!error) return;
+      console.warn("[Nextel] Supabase edge function failed:", error);
+    } catch (e) { console.warn("[Nextel] Supabase invoke error:", e.message); }
+  }
+
+  // ── Try 2: via corsproxy.io (fixed url= param format) ───────────────────
   try {
     const res = await fetch(CORS_PROXY + encodeURIComponent(NEXTEL_SEND_URL), {
       method: "POST",
@@ -116,7 +126,7 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
     throw new Error(`proxy1 HTTP ${res.status}`);
   } catch { /* try backup proxy */ }
 
-  // ── Try 2: allorigins.win as backup CORS proxy ───────────────────────────
+  // ── Try 3: allorigins.win as backup CORS proxy ───────────────────────────
   try {
     const res = await fetch(
       `https://api.allorigins.win/raw?url=${encodeURIComponent(NEXTEL_SEND_URL)}`,
@@ -126,13 +136,13 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
     throw new Error(`proxy2 HTTP ${res.status}`);
   } catch { /* try direct last */ }
 
-  // ── Try 3: direct call (works if Nextel adds CORS headers in future) ─────
+  // ── Try 4: direct call (works if Nextel adds CORS headers in future) ─────
   const res = await fetch(NEXTEL_SEND_URL, {
     method: "POST",
     headers: jsonHeaders,
     body,
   });
-  if (!res.ok) throw new Error(`direct HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`All Nextel dispatch attempts failed: HTTP ${res.status}`);
 }
 
 /**
