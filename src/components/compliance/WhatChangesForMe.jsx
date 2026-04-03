@@ -15,7 +15,6 @@ import WhatChangesPdfTemplate from "../whatchanges/WhatChangesPdfTemplate";
 import { generateWhatChangesPdf, buildPdfBlob } from "../../lib/generateWhatChangesPdf";
 import { uploadPdfBlob } from "../../lib/uploadPdf";
 import { generateShareableReportUrl } from "../../lib/generateShareableUrl";
-import { supabase, isSupabaseEnabled } from "../../lib/supabase";
 
 // ── WhatsApp message generator ─────────────────────────────────────────────
 function buildWhatsAppMessage(clientInfo, highlights) {
@@ -107,12 +106,18 @@ async function dispatchNextel(phone, clientInfo, docUrl) {
   const jsonHeaders = { "Content-Type": "application/json" };
 
   // ── Try 1: Supabase edge function (server-side, no CORS issues) ─────────
-  if (isSupabaseEnabled && supabase) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (supabaseUrl && supabaseKey) {
     try {
-      const { error } = await supabase.functions.invoke("send-whatsapp", { body: payload });
-      if (!error) return;
-      console.warn("[Nextel] Supabase edge function failed:", error);
-    } catch (e) { console.warn("[Nextel] Supabase invoke error:", e.message); }
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
+        method: "POST",
+        headers: { ...jsonHeaders, Authorization: `Bearer ${supabaseKey}` },
+        body,
+      });
+      if (res.ok) return;
+      console.warn("[Nextel] Edge function HTTP", res.status);
+    } catch (e) { console.warn("[Nextel] Edge function error:", e.message); }
   }
 
   // ── Try 2: via corsproxy.io (fixed url= param format) ───────────────────
