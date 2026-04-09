@@ -7,16 +7,23 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "remotion:studio": "remotion studio src/remotion/index.ts",
+    "remotion:render": "remotion render src/remotion/index.ts KolteWorldSchoolAdmissions out/admissions-reel.mp4"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.445",
+    "@remotion/google-fonts": "^4.0.445",
+    "@remotion/shapes": "^4.0.445",
+    "@remotion/transitions": "^4.0.445",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-dropzone": "^15.0.0",
     "react-select": "^5.10.2",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "remotion": "^4.0.445"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
